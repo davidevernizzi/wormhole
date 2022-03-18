@@ -15,6 +15,7 @@ import { COLORS } from "../../muiTheme";
 import HeaderText from "../HeaderText";
 import SmartAddress from "../SmartAddress";
 import { balancePretty } from "../TokenSelectors/TokenPicker";
+import TVLChart from "./Charts/TVLChart";
 import CustodyAddresses from "./CustodyAddresses";
 import NFTStats from "./NFTStats";
 import MuiReactTable from "./tableComponents/MuiReactTable";
@@ -78,130 +79,9 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const StatsRoot: React.FC<any> = () => {
+const StatsRoot = () => {
   const classes = useStyles();
-  const tvl = useTVL();
-
-  const sortTokens = useMemo(() => {
-    return (rowA: any, rowB: any) => {
-      if (rowA.isGrouped && rowB.isGrouped) {
-        return rowA.values.assetAddress > rowB.values.assetAddress ? 1 : -1;
-      } else if (rowA.isGrouped && !rowB.isGrouped) {
-        return 1;
-      } else if (!rowA.isGrouped && rowB.isGrouped) {
-        return -1;
-      } else if (rowA.original.symbol && !rowB.original.symbol) {
-        return 1;
-      } else if (rowB.original.symbol && !rowA.original.symbol) {
-        return -1;
-      } else if (rowA.original.symbol && rowB.original.symbol) {
-        return rowA.original.symbol > rowB.original.symbol ? 1 : -1;
-      } else {
-        return rowA.original.assetAddress > rowB.original.assetAddress ? 1 : -1;
-      }
-    };
-  }, []);
-  const tvlColumns = useMemo(() => {
-    return [
-      {
-        Header: "Token",
-        id: "assetAddress",
-        sortType: sortTokens,
-        disableGroupBy: true,
-        accessor: (value: any) => ({
-          chainId: value.originChainId,
-          symbol: value.symbol,
-          name: value.name,
-          logo: value.logo,
-          assetAddress: value.assetAddress,
-        }),
-        aggregate: (leafValues: any) => leafValues.length,
-        Aggregated: ({ value }: { value: any }) =>
-          `${value} Token${value === 1 ? "" : "s"}`,
-        Cell: (value: any) => (
-          <div className={classes.tokenContainer}>
-            <div className={classes.logoPositioner}>
-              {value.row?.original?.logo ? (
-                <img
-                  src={value.row?.original?.logo}
-                  alt=""
-                  className={classes.logo}
-                />
-              ) : null}
-            </div>
-            <SmartAddress
-              chainId={value.row?.original?.originChainId}
-              address={value.row?.original?.assetAddress}
-              symbol={value.row?.original?.symbol}
-              tokenName={value.row?.original?.name}
-            />
-          </div>
-        ),
-      },
-      { Header: "Chain", accessor: "originChain" },
-      {
-        Header: "Amount",
-        accessor: "amount",
-        align: "right",
-        disableGroupBy: true,
-        Cell: (value: any) =>
-          value.row?.original?.amount !== undefined
-            ? numeral(value.row?.original?.amount).format("0,0.00")
-            : "",
-      },
-      {
-        Header: "Total Value (USD)",
-        id: "totalValue",
-        accessor: "totalValue",
-        align: "right",
-        disableGroupBy: true,
-        aggregate: (leafValues: any) =>
-          balancePretty(
-            formatUnits(
-              leafValues.reduce(
-                (p: BigNumber, v: number | null | undefined) =>
-                  v ? p.add(parseUnits(v.toFixed(18).toString(), 18)) : p,
-                BigNumber.from(0)
-              ),
-              18
-            )
-          ),
-        Aggregated: ({ value }: { value: any }) => value,
-        Cell: (value: any) =>
-          value.row?.original?.totalValue !== undefined
-            ? numeral(value.row?.original?.totalValue).format("0.0 a")
-            : "",
-      },
-      {
-        Header: "Unit Price (USD)",
-        accessor: "quotePrice",
-        align: "right",
-        disableGroupBy: true,
-        Cell: (value: any) =>
-          value.row?.original?.quotePrice !== undefined
-            ? numeral(value.row?.original?.quotePrice).format("0,0.00")
-            : "",
-      },
-    ];
-  }, [
-    classes.logo,
-    classes.tokenContainer,
-    classes.logoPositioner,
-    sortTokens,
-  ]);
-  const tvlString = useMemo(() => {
-    if (!tvl.data) {
-      return "";
-    } else {
-      let sum = 0;
-      tvl.data.forEach((val) => {
-        if (val.totalValue) sum += val.totalValue;
-      });
-      return numeral(sum)
-        .format(sum >= 1000000000 ? "0.000 a" : "0 a")
-        .toUpperCase();
-    }
-  }, [tvl.data]);
+  //   const tvl = useTVL();
 
   return (
     <Container maxWidth="lg">
@@ -216,7 +96,7 @@ const StatsRoot: React.FC<any> = () => {
           </Typography>
         </div>
         <div className={classes.grower} />
-        {!tvl.isFetching ? (
+        {/*!tvl.isFetching ? (
           <div
             className={clsx(classes.explainerContainer, classes.totalContainer)}
           >
@@ -237,10 +117,11 @@ const StatsRoot: React.FC<any> = () => {
               {tvlString}
             </Typography>
           </div>
-        ) : null}
+        ) : null*/}
       </div>
       <Paper className={classes.mainPaper}>
-        {!tvl.isFetching ? (
+        <TVLChart />
+        {/*!tvl.isFetching ? (
           <MuiReactTable
             columns={tvlColumns}
             data={tvl.data || []}
@@ -249,11 +130,11 @@ const StatsRoot: React.FC<any> = () => {
           />
         ) : (
           <CircularProgress className={classes.alignCenter} />
-        )}
+        )*/}
       </Paper>
-      <TransactionMetrics />
-      <CustodyAddresses />
-      <NFTStats />
+      {/* <TransactionMetrics /> */}
+      {/* <CustodyAddresses /> */}
+      {/* <NFTStats /> */}
     </Container>
   );
 };
