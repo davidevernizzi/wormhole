@@ -553,14 +553,6 @@ export async function decodeLocalState(
     return hexStringToUint8Array(ret);
 }
 
-export async function compileTeal(
-    client: algosdk.Algodv2,
-    tealSource: string
-): Promise<TealCompileRsp> {
-    const response = await client.compile(tealSource).do();
-    return { hash: response.hash, result: response.result };
-}
-
 export async function assetOptinCheck(
     client: algosdk.Algodv2,
     asset: number,
