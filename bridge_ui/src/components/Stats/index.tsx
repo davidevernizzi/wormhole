@@ -15,7 +15,7 @@ import { COLORS } from "../../muiTheme";
 import HeaderText from "../HeaderText";
 import SmartAddress from "../SmartAddress";
 import { balancePretty } from "../TokenSelectors/TokenPicker";
-import TVLChart from "./Charts/TVLChart";
+import TVLStats from "./TVLStats";
 import CustodyAddresses from "./CustodyAddresses";
 import NFTStats from "./NFTStats";
 import MuiReactTable from "./tableComponents/MuiReactTable";
@@ -119,8 +119,8 @@ const StatsRoot = () => {
           </div>
         ) : null*/}
       </div>
-      <Paper className={classes.mainPaper}>
-        <TVLChart />
+      {/* <Paper className={classes.mainPaper}> */}
+        <TVLStats />
         {/*!tvl.isFetching ? (
           <MuiReactTable
             columns={tvlColumns}
@@ -131,7 +131,7 @@ const StatsRoot = () => {
         ) : (
           <CircularProgress className={classes.alignCenter} />
         )*/}
-      </Paper>
+      {/* </Paper> */}
       {/* <TransactionMetrics /> */}
       {/* <CustodyAddresses /> */}
       {/* <NFTStats /> */}

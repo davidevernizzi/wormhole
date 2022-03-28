@@ -10,7 +10,7 @@ import {
 import clsx from "clsx";
 import numeral from "numeral";
 import { useMemo } from "react";
-import useTVL from "../../hooks/useTVL";
+import { useTVL } from "../../hooks/useTVL";
 import { COLORS } from "../../muiTheme";
 import HeaderText from "../HeaderText";
 import SmartAddress from "../SmartAddress";

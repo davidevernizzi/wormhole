@@ -23,6 +23,7 @@ export type TVL = {
   decimals?: number;
 };
 
+// TODO: consoloidate these?
 interface LockedAsset {
   Symbol: string;
   Name: string;
@@ -41,12 +42,12 @@ interface ChainsAssets {
   [chainId: string]: LockedAssets;
 }
 
-interface NotionalTvl {
+export interface NotionalTVL {
   Last24HoursChange: ChainsAssets;
   AllTime: ChainsAssets;
 }
 
-const createTVLArray = (notionalTvl: NotionalTvl) => {
+const createTVLArray = (notionalTvl: NotionalTVL) => {
   const tvl: TVL[] = [];
   for (const [chainId, chainAssets] of Object.entries(notionalTvl.AllTime)) {
     if (chainId === "*") continue;
@@ -71,13 +72,13 @@ const createTVLArray = (notionalTvl: NotionalTvl) => {
   return tvl;
 };
 
-const useTVL = () => {
+export const useTVL = () => {
   const [tvl, setTvl] = useState<DataWrapper<TVL[]>>(fetchDataWrapper());
 
   useEffect(() => {
     let cancelled = false;
     axios
-      .get<NotionalTvl>(TVL_URL)
+      .get<NotionalTVL>(/*TVL_URL*/ "./notionaltvl.json")
       .then((response) => {
         if (!cancelled) {
           setTvl(receiveDataWrapper(createTVLArray(response.data)));
@@ -97,4 +98,32 @@ const useTVL = () => {
   return tvl;
 };
 
-export default useTVL;
+const useTVLNew = () => {
+  const [tvl, setTVL] = useState<NotionalTVL | null>(null);
+  const [error, setError] = useState("")
+
+  useEffect(() => {
+    let cancelled = false;
+    axios
+      .get<NotionalTVL>("./notionaltvl.json")
+      .then((response) => {
+        if (!cancelled) {
+          setTVL(response.data);
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setError(error);
+        }
+        console.log(error);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return { tvl, error }
+
+}
+
+export default useTVLNew;

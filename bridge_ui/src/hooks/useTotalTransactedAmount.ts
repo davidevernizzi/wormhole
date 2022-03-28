@@ -6,7 +6,7 @@ import { formatUnits } from "@ethersproject/units";
 import axios from "axios";
 import { useEffect, useMemo, useState } from "react";
 import { DataWrapper } from "../store/helpers";
-import useTVL from "./useTVL";
+import { useTVL } from "./useTVL";
 
 function convertbase64ToBinary(base64: string) {
   var raw = window.atob(base64);
