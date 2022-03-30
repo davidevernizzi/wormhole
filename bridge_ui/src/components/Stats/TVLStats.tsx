@@ -1,4 +1,5 @@
 import {
+  Button,
   Checkbox,
   FormControl,
   ListItemText,
@@ -7,6 +8,7 @@ import {
   Paper,
   Select,
   TextField,
+  Tooltip,
   Typography,
 } from "@material-ui/core";
 import { ToggleButton, ToggleButtonGroup } from "@material-ui/lab";
@@ -15,11 +17,13 @@ import TVLAreaChart from "./Charts/TVLAreaChart";
 import useCumulativeTVL from "../../hooks/useCumulativeTVL";
 import { TIME_FRAMES } from "./Charts/TimeFrame";
 import TVLLineChart from "./Charts/TVLLineChart";
-import { CHAINS_BY_ID } from "../../utils/consts";
+import { ChainInfo, CHAINS_BY_ID } from "../../utils/consts";
 import { ChainId } from "@certusone/wormhole-sdk";
 import { COLORS } from "../../muiTheme";
 import ChainTVLChart from "./Charts/ChainTVLChart";
+import ChainTVLTable from "./Charts/ChainTVLTable";
 import useTVLNew from "../../hooks/useTVL";
+import { ArrowBack, InfoOutlined } from "@material-ui/icons";
 
 const useStyles = makeStyles((theme) => ({
   flexBox: {
@@ -39,6 +43,16 @@ const useStyles = makeStyles((theme) => ({
   toggleButton: {
     textTransform: "none",
   },
+  tvlText: {
+    styleName: "Heading 36",
+    fontFamily: "Poppins",
+    fontSize: "36px",
+    fontStyle: "normal",
+    fontWeight: 400,
+    lineHeight: "42px",
+    letterSpacing: "0em",
+    textAlign: "left",
+  },
 }));
 
 const TVLStats = () => {
@@ -49,9 +63,34 @@ const TVLStats = () => {
 
   const [selectedChains, setSelectedChains] = useState<ChainId[]>([]);
 
+  const [selectedChainDetail, setSelectedChainDetail] =
+    useState<ChainInfo | null>(null);
+
   // TODO: should probably pass this in
   const { cumulativeTVL } = useCumulativeTVL();
   const { tvl } = useTVLNew();
+
+  //const chainTVL = useMemo(() => {
+  //  return selectedChainDetail && tvl.data
+  //    ? tvl.reduce((sum, x) =>
+  //        x.chainId === selectedChainDetail.id ? sum + x.tvl : sum;
+  //      , 0)
+  //    : null;
+  //}, [tvl, selectedChainDetail]);
+
+  // TODO: placeholder number until I figure out why tvl numbers don't match (all time and cumulative today)
+  const allTimeTVL = useMemo(() => {
+    const formatter = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: 0,
+    });
+    if (!selectedChainDetail)
+      return formatter.format(tvl?.AllTime["*"]["*"].Notional || 0);
+    return formatter.format(
+      tvl?.AllTime[selectedChainDetail.id]["*"].Notional || 0
+    );
+  }, [selectedChainDetail, tvl]);
 
   const availableChains = useMemo(() => {
     const chainIds = cumulativeTVL
@@ -94,8 +133,40 @@ const TVLStats = () => {
     [availableChains]
   );
 
+  const handleChainDetailSelected = useCallback((chainInfo: ChainInfo) => {
+    setSelectedChainDetail(chainInfo);
+  }, []);
+
+  const allChainsSelected = selectedChains.length === availableChains.length;
+  const tvlText =
+    "Total Value Locked" +
+    (selectedChainDetail ? ` on ${selectedChainDetail?.name}` : "");
+  const tooltipText = selectedChainDetail
+    ? `Total Value Locked on ${selectedChainDetail?.name}`
+    : "USD equivalent value of all assets locked in the Wormhole protocol";
+
   return (
     <div className={classes.flexBox}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          marginBottom: "16px",
+        }}
+      >
+        <Typography display="inline" className={classes.tvlText}>
+          {tvlText}
+        </Typography>
+        <Tooltip title={tooltipText} arrow>
+          <InfoOutlined style={{ marginLeft: "8px", marginBottom: "16px" }} />
+        </Tooltip>
+        <Typography display="inline" style={{ marginLeft: "auto" }}>
+          at this time
+        </Typography>
+        <Typography display="inline" variant="h4" className={classes.tvlText}>
+          {allTimeTVL}
+        </Typography>
+      </div>
       <div
         style={{
           display: "flex",
@@ -104,71 +175,87 @@ const TVLStats = () => {
           marginBottom: "16px",
         }}
       >
-        <Typography style={{ marginRight: "6px" }}>Display by</Typography>
-        <ToggleButtonGroup
-          value={displayBy}
-          exclusive
-          onChange={handleDisplayByChange}
-        >
-          <ToggleButton value="Time" className={classes.toggleButton}>
-            Time
-          </ToggleButton>
-          <ToggleButton value="Chain" className={classes.toggleButton}>
-            Chain
-          </ToggleButton>
-        </ToggleButtonGroup>
-        <FormControl style={{ marginLeft: "auto", marginRight: "16px" }}>
-          <Select
-            multiple
-            variant="outlined"
-            value={selectedChains}
-            onChange={handleSelectedChainsChange}
-            renderValue={(selected: any) =>
-              selected.length === availableChains.length
-                ? "All chains"
-                : selected.length > 1
-                ? `${selected.length} chains`
-                : //@ts-ignore
-                  CHAINS_BY_ID[selected[0]]?.name
-            }
+        {!selectedChainDetail ? (
+          <>
+            <Typography style={{ marginRight: "6px" }}>Display by</Typography>
+            <ToggleButtonGroup
+              value={displayBy}
+              exclusive
+              onChange={handleDisplayByChange}
+            >
+              <ToggleButton value="Time" className={classes.toggleButton}>
+                Time
+              </ToggleButton>
+              <ToggleButton value="Chain" className={classes.toggleButton}>
+                Chain
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </>
+        ) : null}
+        {displayBy === "Time" && !selectedChainDetail ? (
+          <>
+            <FormControl style={{ marginLeft: "auto", marginRight: "16px" }}>
+              <Select
+                multiple
+                variant="outlined"
+                value={selectedChains}
+                onChange={handleSelectedChainsChange}
+                renderValue={(selected: any) =>
+                  selected.length === availableChains.length
+                    ? "All chains"
+                    : selected.length > 1
+                    ? `${selected.length} chains`
+                    : //@ts-ignore
+                      CHAINS_BY_ID[selected[0]]?.name
+                }
+              >
+                <MenuItem value="all">
+                  <Checkbox
+                    checked={availableChains.length > 0 && allChainsSelected}
+                    indeterminate={
+                      selectedChains.length > 0 &&
+                      selectedChains.length < availableChains.length
+                    }
+                  />
+                  <ListItemText primary="All chains" />
+                </MenuItem>
+                {availableChains.map((option) => (
+                  <MenuItem key={option} value={option}>
+                    <Checkbox checked={selectedChains.indexOf(option) > -1} />
+                    <ListItemText primary={CHAINS_BY_ID[option]?.name} />
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <TextField
+              select
+              variant="outlined"
+              value={timeFrame}
+              onChange={handleTimeFrameChange}
+            >
+              {Object.keys(TIME_FRAMES).map(
+                (timeFrame /* TODO: memoize ? */) => (
+                  <MenuItem key={timeFrame} value={timeFrame}>
+                    {timeFrame}
+                  </MenuItem>
+                )
+              )}
+            </TextField>
+          </>
+        ) : selectedChainDetail ? (
+          <Button
+            startIcon={<ArrowBack />}
+            onClick={() => {
+              setSelectedChainDetail(null);
+            }}
           >
-            <MenuItem value="all">
-              <Checkbox
-                checked={
-                  availableChains.length > 0 &&
-                  selectedChains.length === availableChains.length
-                }
-                indeterminate={
-                  selectedChains.length > 0 &&
-                  selectedChains.length < availableChains.length
-                }
-              />
-              <ListItemText primary="All chains" />
-            </MenuItem>
-            {availableChains.map((option) => (
-              <MenuItem key={option} value={option}>
-                <Checkbox checked={selectedChains.indexOf(option) > -1} />
-                <ListItemText primary={CHAINS_BY_ID[option]?.name} />
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <TextField
-          select
-          variant="outlined"
-          value={timeFrame}
-          onChange={handleTimeFrameChange}
-        >
-          {Object.keys(TIME_FRAMES).map((timeFrame /* TODO: memoize ? */) => (
-            <MenuItem key={timeFrame} value={timeFrame}>
-              {timeFrame}
-            </MenuItem>
-          ))}
-        </TextField>
+            Back to all chains
+          </Button>
+        ) : null}
       </div>
       <Paper className={classes.mainPaper}>
         {displayBy === "Time" ? (
-          selectedChains.length === availableChains.length ? (
+          allChainsSelected ? (
             <TVLAreaChart cumulativeTVL={cumulativeTVL} timeFrame={timeFrame} />
           ) : (
             <TVLLineChart
@@ -177,8 +264,13 @@ const TVLStats = () => {
               selectedChains={selectedChains}
             />
           )
+        ) : selectedChainDetail ? (
+          <ChainTVLTable chainInfo={selectedChainDetail} />
         ) : (
-          <ChainTVLChart tvl={tvl} />
+          <ChainTVLChart
+            tvl={tvl}
+            onChainSelected={handleChainDetailSelected}
+          />
         )}
       </Paper>
     </div>

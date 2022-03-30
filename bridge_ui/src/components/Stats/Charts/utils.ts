@@ -16,9 +16,16 @@ import {
 import { NotionalTVLCumulative } from "../../../hooks/useCumulativeTVL";
 import { TimeFrame } from "./TimeFrame";
 
-// TODO: move elsewhere? more formatting
 export const formatTVL = (tvl: number) => {
-  return `$${(tvl / 1e9).toFixed(2)} B`;
+  const [divisor, unit, fractionDigits] =
+    tvl < 1e3
+      ? [1, "", 0]
+      : tvl < 1e6
+      ? [1e3, "K", 0]
+      : tvl < 1e9
+      ? [1e6, "M", 2]
+      : [1e9, "B", 2];
+  return `$${(tvl / divisor).toFixed(fractionDigits)} ${unit}`;
 };
 
 export const formatDate = (date: Date) => {

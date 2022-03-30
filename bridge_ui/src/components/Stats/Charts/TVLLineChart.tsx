@@ -1,13 +1,15 @@
 import { ChainId } from "@certusone/wormhole-sdk";
 import { useMemo } from "react";
 import {
+  Legend,
   Line,
-  LineChart as Chart,
+  LineChart,
   ResponsiveContainer,
   XAxis,
   YAxis,
 } from "recharts";
 import { NotionalTVLCumulative } from "../../../hooks/useCumulativeTVL";
+import { CHAINS_BY_ID } from "../../../utils/consts";
 import { TIME_FRAMES } from "./TimeFrame";
 import {
   COLOR_BY_CHAIN_ID,
@@ -34,7 +36,7 @@ const TVLLineChart = ({
 
   return (
     <ResponsiveContainer>
-      <Chart width={1024} height={768} data={parsedCumulativeTVL}>
+      <LineChart data={parsedCumulativeTVL}>
         <XAxis
           dataKey="date"
           tickFormatter={formatDate}
@@ -51,13 +53,15 @@ const TVLLineChart = ({
         {selectedChains.map((chainId) => (
           <Line
             dataKey={`tvlByChain.${chainId}`}
+            name={CHAINS_BY_ID[chainId]?.name}
             stroke={COLOR_BY_CHAIN_ID[chainId]}
             strokeWidth="4"
             dot={false}
             key={chainId}
           />
         ))}
-      </Chart>
+        <Legend iconType="square"/>
+      </LineChart>
     </ResponsiveContainer>
   );
 };

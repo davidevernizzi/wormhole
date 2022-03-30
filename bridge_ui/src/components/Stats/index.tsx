@@ -86,15 +86,15 @@ const StatsRoot = () => {
   return (
     <Container maxWidth="lg">
       <Container maxWidth="md">
-        <HeaderText white>Rock Hard Stats</HeaderText>
+        <HeaderText white>Stats</HeaderText>
       </Container>
       <div className={classes.flexBox}>
-        <div className={classes.explainerContainer}>
+        {/* <div className={classes.explainerContainer}>
           <Typography variant="h4">Total Value Locked</Typography>
           <Typography variant="subtitle1" color="textSecondary">
             These assets are currently locked by the Token Bridge contracts.
           </Typography>
-        </div>
+        </div> */}
         <div className={classes.grower} />
         {/*!tvl.isFetching ? (
           <div
