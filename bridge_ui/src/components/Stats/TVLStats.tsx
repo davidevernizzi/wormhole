@@ -25,40 +25,49 @@ import ChainTVLTable from "./Charts/ChainTVLTable";
 import useTVLNew from "../../hooks/useTVL";
 import { ArrowBack, InfoOutlined } from "@material-ui/icons";
 
+const DISPLAY_BY_VALUES = ["Time", "Chain"];
+
 const useStyles = makeStyles((theme) => ({
-  flexBox: {
+  description: {
     display: "flex",
-    flexDirection: "column",
+    alignItems: "center",
+    marginBottom: "16px",
+  },
+  displayBy: {
+    display: "flex",
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: "16px",
   },
   mainPaper: {
     backgroundColor: COLORS.whiteWithTransparency,
     padding: "2rem",
-    "& > h, & > p ": {
-      margin: ".5rem",
-    },
     marginBottom: theme.spacing(8),
-    // width: "100%",
     height: "768px",
   },
   toggleButton: {
     textTransform: "none",
   },
+  tooltip: {
+    marginLeft: "8px",
+    marginBottom: "16px",
+  },
   tvlText: {
-    styleName: "Heading 36",
-    fontFamily: "Poppins",
-    fontSize: "36px",
-    fontStyle: "normal",
-    fontWeight: 400,
-    lineHeight: "42px",
-    letterSpacing: "0em",
-    textAlign: "left",
+    // styleName: "Heading 36",
+    // fontFamily: "Poppins",
+    // fontSize: "36px",
+    // fontStyle: "normal",
+    // fontWeight: 400,
+    // lineHeight: "42px",
+    // letterSpacing: "0em",
+    // textAlign: "left",
   },
 }));
 
 const TVLStats = () => {
   const classes = useStyles();
 
-  const [displayBy, setDisplayBy] = useState("Time");
+  const [displayBy, setDisplayBy] = useState(DISPLAY_BY_VALUES[0]);
   const [timeFrame, setTimeFrame] = useState("All time");
 
   const [selectedChains, setSelectedChains] = useState<ChainId[]>([]);
@@ -94,15 +103,14 @@ const TVLStats = () => {
 
   const availableChains = useMemo(() => {
     const chainIds = cumulativeTVL
-      ? Object.keys(Object.values(cumulativeTVL.DailyLocked)[0])
+      ? Object.keys(Object.values(cumulativeTVL.DailyLocked)[0] || {})
           .reduce<ChainId[]>((accum, key) => {
-            const chainId = parseFloat(key) as ChainId;
+            const chainId = parseInt(key) as ChainId;
             if (CHAINS_BY_ID[chainId] !== undefined) {
               accum.push(chainId);
             }
             return accum;
           }, [])
-          .sort()
       : [];
     setSelectedChains(chainIds);
     return chainIds;
@@ -146,49 +154,38 @@ const TVLStats = () => {
     : "USD equivalent value of all assets locked in the Wormhole protocol";
 
   return (
-    <div className={classes.flexBox}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          marginBottom: "16px",
-        }}
-      >
-        <Typography display="inline" className={classes.tvlText}>
+    <>
+      <div className={classes.description}>
+        <Typography display="inline" variant="h3" className={classes.tvlText}>
           {tvlText}
+          <Tooltip title={tooltipText} arrow className={classes.tooltip}>
+            <InfoOutlined />
+          </Tooltip>
         </Typography>
-        <Tooltip title={tooltipText} arrow>
-          <InfoOutlined style={{ marginLeft: "8px", marginBottom: "16px" }} />
-        </Tooltip>
-        <Typography display="inline" style={{ marginLeft: "auto" }}>
+        <Typography
+          display="inline"
+          style={{ marginLeft: "auto", marginRight: "8px" }}
+        >
           at this time
         </Typography>
-        <Typography display="inline" variant="h4" className={classes.tvlText}>
+        <Typography display="inline" variant="h3" className={classes.tvlText}>
           {allTimeTVL}
         </Typography>
       </div>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          alignItems: "center",
-          marginBottom: "16px",
-        }}
-      >
+      <div className={classes.displayBy}>
         {!selectedChainDetail ? (
           <>
-            <Typography style={{ marginRight: "6px" }}>Display by</Typography>
+            <Typography style={{ marginRight: "8px" }}>Display by</Typography>
             <ToggleButtonGroup
               value={displayBy}
               exclusive
               onChange={handleDisplayByChange}
             >
-              <ToggleButton value="Time" className={classes.toggleButton}>
-                Time
-              </ToggleButton>
-              <ToggleButton value="Chain" className={classes.toggleButton}>
-                Chain
-              </ToggleButton>
+              {DISPLAY_BY_VALUES.map((value) => (
+                <ToggleButton value={value} className={classes.toggleButton}>
+                  {value}
+                </ToggleButton>
+              ))}
             </ToggleButtonGroup>
           </>
         ) : null}
@@ -273,7 +270,7 @@ const TVLStats = () => {
           />
         )}
       </Paper>
-    </div>
+    </>
   );
 };
 

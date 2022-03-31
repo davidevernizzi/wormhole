@@ -14,6 +14,9 @@ import {
   CHAIN_ID_TERRA,
 } from "@certusone/wormhole-sdk";
 import { NotionalTVLCumulative } from "../../../hooks/useCumulativeTVL";
+import useNotionalTransferred, {
+  NotionalTransferred,
+} from "../../../hooks/useNotionalTransferred";
 import { TimeFrame } from "./TimeFrame";
 
 export const formatTVL = (tvl: number) => {
@@ -23,7 +26,7 @@ export const formatTVL = (tvl: number) => {
       : tvl < 1e6
       ? [1e3, "K", 0]
       : tvl < 1e9
-      ? [1e6, "M", 2]
+      ? [1e6, "M", 0]
       : [1e9, "B", 2];
   return `$${(tvl / divisor).toFixed(fractionDigits)} ${unit}`;
 };
@@ -35,6 +38,7 @@ export const formatDate = (date: Date) => {
   });
 };
 
+// TODO: probably move this
 export const COLOR_BY_CHAIN_ID: { [key in ChainId]?: string } = {
   [CHAIN_ID_SOLANA]: "#31D7BB",
   [CHAIN_ID_ETH]: "#8A92B2",
@@ -62,25 +66,27 @@ export const parseCumulativeTVL = (
   notionalTVLCumulative: NotionalTVLCumulative,
   timeFrame: TimeFrame
 ): ParsedCumulativeTVL[] => {
-  return Object.entries(notionalTVLCumulative.DailyLocked)
-    .reduce<ParsedCumulativeTVL[]>((accum, [date, chains]) => {
-      const intervalDate = new Date(
+  const sortedDates = Object.keys(notionalTVLCumulative.DailyLocked).sort();
+  return sortedDates
+    .reduce<ParsedCumulativeTVL[]>((accum, date) => {
+      const chainsAssets = notionalTVLCumulative.DailyLocked[date];
+      const bucketDate = new Date(
         timeFrame.interval === "Monthly" ? date.slice(0, 7) : date
       );
       let entry = accum[accum.length - 1];
       if (
         entry === undefined ||
-        entry.date.getTime() !== intervalDate.getTime()
+        entry.date.getTime() !== bucketDate.getTime()
       ) {
         entry = {
-          date: intervalDate,
+          date: bucketDate,
           tvl: 0,
           tvlByChain: {},
         };
         accum.push(entry);
       }
       // TODO: chain 56 and 0 are bad
-      Object.entries(chains).forEach(([chainId, lockedAssets]) => {
+      Object.entries(chainsAssets).forEach(([chainId, lockedAssets]) => {
         const notional = lockedAssets["*"].Notional;
         if (chainId === "*") {
           entry.tvl = notional;
@@ -90,5 +96,51 @@ export const parseCumulativeTVL = (
       });
       return accum;
     }, [])
-    .slice(timeFrame.count ? -timeFrame.count : undefined);
+    .slice(timeFrame.count ? -timeFrame.count : 0);
+};
+
+export interface NotionalTransferredEntry {
+  date: Date;
+  totalValue: number;
+  valueByChain: {
+    [chainId: string]: number;
+  };
+}
+
+export const parseNotionalTransferred = (
+  notionalTransferred: NotionalTransferred,
+  timeFrame: TimeFrame
+) => {
+  const sortedDates = Object.keys(notionalTransferred.Daily).sort();
+  return sortedDates
+    .reduce<NotionalTransferredEntry[]>((accum, date) => {
+      const transferData = notionalTransferred.Daily[date];
+      const bucketDate = new Date(
+        timeFrame.interval === "Monthly" ? date.slice(0, 7) : date
+      );
+      let entry = accum[accum.length - 1];
+      if (
+        entry === undefined ||
+        entry.date.getTime() !== bucketDate.getTime()
+      ) {
+        entry = {
+          date: bucketDate,
+          totalValue: 0,
+          valueByChain: {},
+        };
+        accum.push(entry);
+      }
+      // TODO: chain 56 and 0 are bad
+      Object.entries(transferData).forEach(([chainId, lockedAssets]) => {
+        const value = lockedAssets["*"]["*"];
+        if (chainId === "*") {
+          entry.totalValue += value;
+        } else {
+          entry.valueByChain[chainId] =
+            (entry.valueByChain[chainId] || 0) + value;
+        }
+      });
+      return accum;
+    }, [])
+    .slice(timeFrame.count ? -timeFrame.count : 0);
 };

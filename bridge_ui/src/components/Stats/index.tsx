@@ -20,6 +20,7 @@ import CustodyAddresses from "./CustodyAddresses";
 import NFTStats from "./NFTStats";
 import MuiReactTable from "./tableComponents/MuiReactTable";
 import TransactionMetrics from "./TransactionMetrics";
+import VolumeStats from "./VolumeStats";
 
 const useStyles = makeStyles((theme) => ({
   logoPositioner: {
@@ -121,6 +122,7 @@ const StatsRoot = () => {
       </div>
       {/* <Paper className={classes.mainPaper}> */}
         <TVLStats />
+        <VolumeStats />
         {/*!tvl.isFetching ? (
           <MuiReactTable
             columns={tvlColumns}
