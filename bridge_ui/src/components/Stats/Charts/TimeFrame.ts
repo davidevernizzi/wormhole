@@ -1,14 +1,15 @@
+import { DurationLike } from "luxon";
+
 export interface TimeFrame {
-  interval: "Daily" | "Monthly";
-  count: number | undefined;
+  interval?: number;
+  duration?: DurationLike;
 }
 
 export const TIME_FRAMES: { [key: string]: TimeFrame } = {
-  // "24 hours", // TODO: need to support hourly data
-  "7 days": { interval: "Daily", count: 7 },
-  "30 days": { interval: "Daily", count: 30 },
-  "3 months": { interval: "Monthly", count: 3 },
-  "6 months": { interval: "Monthly", count: 6 },
-  "1 year": { interval: "Monthly", count: 12 },
-  "All time": { interval: "Monthly", count: undefined },
+  "7 days": { duration: { days: 7 } },
+  "30 days": { duration: { days: 30 } },
+  "3 months": { duration: { months: 3 } },
+  "6 months": { duration: { months: 6 }, interval: 30 },
+  "1 year": { duration: { years: 1 }, interval: 30 },
+  "All time": { interval: 30 },
 };

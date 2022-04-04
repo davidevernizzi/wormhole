@@ -1,124 +1,137 @@
 import { ChainId } from "@certusone/wormhole-sdk";
-import { Typography, Grid } from "@material-ui/core";
+import { Typography, makeStyles, Grid } from "@material-ui/core";
 import { useMemo, useState } from "react";
 import {
   ResponsiveContainer,
   BarChart,
-  CartesianGrid,
   XAxis,
   YAxis,
   Tooltip,
   Legend,
   Bar,
 } from "recharts";
-import { CHAINS_BY_ID } from "../../../utils/consts";
 import {
+  CHAINS_BY_ID,
   COLOR_BY_CHAIN_ID,
-  formatDate,
-  formatTVL,
-  NotionalTransferredEntry,
-} from "./utils";
+  getChainShortName,
+} from "../../../utils/consts";
+import { formatDate, AggregatedNotionalTransferred, formatTVL } from "./utils";
+
+const useStyles = makeStyles(() => ({
+  tooltipContainer: {
+    padding: "16px",
+    minWidth: "214px",
+    background: "rgba(255, 255, 255, 0.95)",
+    borderRadius: "4px",
+  },
+  tooltipTitleText: {
+    color: "#21227E",
+    fontSize: "24px",
+    fontWeight: 500,
+    marginLeft: "8px",
+  },
+  tooltipRuler: {
+    height: "3px",
+  },
+  tooltipValueText: {
+    color: "#404040",
+    fontSize: "18px",
+    fontWeight: 500,
+  },
+  tooltipIcon: {
+    width: "24px",
+    height: "24px",
+  },
+}));
 
 interface BarData {
   date: Date;
-  volumeByChain: {
+  volume: {
+    [chainId: string]: number;
+  };
+  volumePercent: {
     [chainId: string]: number;
   };
 }
 
 const createBarData = (
-  data: NotionalTransferredEntry[],
+  notionalTransferred: AggregatedNotionalTransferred[],
   selectedChains: ChainId[]
-): BarData[] => {
-  return data.reduce<BarData[]>((barData, entry) => {
-    const barDatum: BarData = {
-      date: entry.date,
-      volumeByChain: {},
+) => {
+  return notionalTransferred.reduce<BarData[]>((barData, transferData) => {
+    const data: BarData = {
+      date: transferData.date,
+      volume: {},
+      volumePercent: {},
     };
-    const totalVolume = Object.entries(entry.valueByChain).reduce(
-      (accumVolume, [chainId, volume]) => {
+    const totalVolume = Object.entries(transferData.transferredByChain).reduce(
+      (totalVolume, [chainId, volume]) => {
         if (selectedChains.indexOf(+chainId as ChainId) > -1) {
-          barDatum.volumeByChain[chainId] = volume;
-          return accumVolume + volume;
+          data.volume[chainId] = volume;
+          return totalVolume + volume;
         }
-        return accumVolume;
+        return totalVolume;
       },
       0
     );
-    Object.keys(barDatum.volumeByChain).forEach((chainId) => {
-      if (totalVolume > 0) {
-        barDatum.volumeByChain[chainId] /= totalVolume / 100;
-      }
-    });
-    barData.push(barDatum);
+    if (totalVolume > 0) {
+      Object.keys(data.volume).forEach((chainId) => {
+        data.volumePercent[chainId] =
+          (data.volume[chainId] / totalVolume) * 100;
+      });
+    }
+    barData.push(data);
     return barData;
   }, []);
 };
 
-const CustomTooltip = ({ active, payload, label, chainId }: any) => {
-  if (active && payload && payload.length) {
-    const chainName = CHAINS_BY_ID[chainId as ChainId]?.name;
-    const data = payload.find((data: any) => data.name === chainName);
-    if (data === undefined) {
-      return null;
+const CustomTooltip = ({ active, payload, chainId }: any) => {
+  const classes = useStyles();
+  if (active && payload && payload.length && chainId) {
+    const chainShortName = getChainShortName(chainId);
+    const data = payload.find((data: any) => data.name === chainShortName);
+    if (data) {
+      return (
+        <div className={classes.tooltipContainer}>
+          <Grid container alignItems="center">
+            <img
+              className={classes.tooltipIcon}
+              src={CHAINS_BY_ID[chainId as ChainId]?.logo}
+              alt={chainShortName}
+            />
+            <Typography display="inline" className={classes.tooltipTitleText}>
+              {chainShortName}
+            </Typography>
+          </Grid>
+          <hr
+            className={classes.tooltipRuler}
+            style={{ backgroundColor: COLOR_BY_CHAIN_ID[chainId as ChainId] }}
+          ></hr>
+          <Typography
+            className={classes.tooltipValueText}
+          >{`${data.value.toFixed(1)}%`}</Typography>
+          <Typography className={classes.tooltipValueText}>
+            {formatTVL(data.payload.volume[chainId])}
+          </Typography>
+        </div>
+      );
     }
-
-    return (
-      <div style={{ background: "white" }}>
-        <Typography
-          style={{
-            color: "#21227E",
-            fontSize: "24px",
-            fontWeight: 500,
-            lineHeight: "36px",
-          }}
-        >
-          TVL
-        </Typography>
-        <hr
-          style={{
-            width: "182px",
-            top: "8px",
-            border: "3px solid",
-            background: "linear-gradient(90deg, #F44B1B 0%, #EEB430 100%)",
-            // fill: "url(#colorUv)",
-          }}
-        ></hr>
-        <Grid container justify="space-between">
-          <Typography
-            display="inline"
-            style={{ color: "#404040", fontSize: "18px", lineHeight: "24px" }}
-            align="left"
-          >
-            {`${data.value.toFixed(2)}%`}
-          </Typography>
-          <Typography
-            display="inline"
-            style={{ color: "#404040CC", fontSize: "14px", lineHeight: "18px" }}
-            align="right"
-          >
-            {formatDate(label)}
-          </Typography>
-        </Grid>
-      </div>
-    );
   }
-
   return null;
 };
 
 const VolumeStackedBarChart = ({
-  data,
+  notionalTransferred,
   selectedChains,
 }: {
-  data: NotionalTransferredEntry[];
+  notionalTransferred: AggregatedNotionalTransferred[];
   selectedChains: ChainId[];
 }) => {
   const [hoverChainId, setHoverChainId] = useState<ChainId | null>(null);
 
   const barData = useMemo(() => {
-    return createBarData(data, selectedChains);
-  }, [data, selectedChains]);
+    return createBarData(notionalTransferred, selectedChains);
+  }, [notionalTransferred, selectedChains]);
 
   return (
     <ResponsiveContainer>
@@ -139,19 +152,18 @@ const VolumeStackedBarChart = ({
           tickLine={false}
         />
         <Tooltip
+          content={<CustomTooltip chainId={hoverChainId} barData={barData} />}
           cursor={{ fill: "transparent" }}
-          content={<CustomTooltip chainId={hoverChainId} />}
         />
         {selectedChains.map((chainId) => (
           <Bar
-            dataKey={`volumeByChain.${chainId}`}
-            name={CHAINS_BY_ID[chainId]?.name}
+            dataKey={`volumePercent.${chainId}`}
+            name={getChainShortName(chainId)}
             fill={COLOR_BY_CHAIN_ID[chainId]}
-            strokeWidth="4"
-            // dot={false}
             key={chainId}
             stackId="a"
             onMouseOver={() => setHoverChainId(chainId)}
+            label="foobar"
           />
         ))}
         <Legend iconType="square" />

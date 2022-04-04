@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import {
+  DataWrapper,
+  errorDataWrapper,
+  fetchDataWrapper,
+  receiveDataWrapper,
+} from "../store/helpers";
 
 export interface LockedAsset {
   Symbol: string;
@@ -26,9 +32,9 @@ export interface NotionalTVLCumulative {
 }
 
 const useCumulativeTVL = () => {
-  const [cumulativeTVL, setCumulativeTVL] =
-    useState<NotionalTVLCumulative | null>(null);
-  const [error, setError] = useState("");
+  const [cumulativeTVL, setCumulativeTVL] = useState<
+    DataWrapper<NotionalTVLCumulative>
+  >(fetchDataWrapper());
 
   useEffect(() => {
     let cancelled = false;
@@ -36,12 +42,12 @@ const useCumulativeTVL = () => {
       .get<NotionalTVLCumulative>("./tvlcumulative.json")
       .then((response) => {
         if (!cancelled) {
-          setCumulativeTVL(response.data);
+          setCumulativeTVL(receiveDataWrapper(response.data));
         }
       })
       .catch((error) => {
         if (!cancelled) {
-          setError(error);
+          setCumulativeTVL(errorDataWrapper(error));
         }
         console.log(error);
       });
@@ -50,7 +56,7 @@ const useCumulativeTVL = () => {
     };
   }, []);
 
-  return { cumulativeTVL, error };
+  return cumulativeTVL;
 };
 
 export default useCumulativeTVL;

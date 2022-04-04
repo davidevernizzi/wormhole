@@ -1,23 +1,8 @@
-import {
-  ChainId,
-  CHAIN_ID_ACALA,
-  CHAIN_ID_ALGORAND,
-  CHAIN_ID_AURORA,
-  CHAIN_ID_AVAX,
-  CHAIN_ID_BSC,
-  CHAIN_ID_ETH,
-  CHAIN_ID_FANTOM,
-  CHAIN_ID_KARURA,
-  CHAIN_ID_OASIS,
-  CHAIN_ID_POLYGON,
-  CHAIN_ID_SOLANA,
-  CHAIN_ID_TERRA,
-} from "@certusone/wormhole-sdk";
 import { NotionalTVLCumulative } from "../../../hooks/useCumulativeTVL";
-import useNotionalTransferred, {
-  NotionalTransferred,
-} from "../../../hooks/useNotionalTransferred";
+import { NotionalTransferred } from "../../../hooks/useNotionalTransferred";
+import { TransactionCount } from "../../../hooks/useTransactionCount";
 import { TimeFrame } from "./TimeFrame";
+import { DateTime } from "luxon";
 
 export const formatTVL = (tvl: number) => {
   const [divisor, unit, fractionDigits] =
@@ -32,115 +17,146 @@ export const formatTVL = (tvl: number) => {
 };
 
 export const formatDate = (date: Date) => {
-  return date.toLocaleString("default", {
-    month: "short",
+  // TODO: this should be toLocalteDateString...
+  // why is object passed in and number and string???
+  return date.toLocaleString("en-US", {
+    day: "numeric",
+    month: "long",
     year: "numeric",
   });
 };
 
-// TODO: probably move this
-export const COLOR_BY_CHAIN_ID: { [key in ChainId]?: string } = {
-  [CHAIN_ID_SOLANA]: "#31D7BB",
-  [CHAIN_ID_ETH]: "#8A92B2",
-  [CHAIN_ID_TERRA]: "#5493F7",
-  [CHAIN_ID_BSC]: "#F0B90B",
-  [CHAIN_ID_POLYGON]: "#8247E5",
-  [CHAIN_ID_AVAX]: "#E84142",
-  [CHAIN_ID_OASIS]: "#0092F6",
-  [CHAIN_ID_ALGORAND]: "#000000",
-  [CHAIN_ID_AURORA]: "#23685A",
-  [CHAIN_ID_FANTOM]: "#1969FF",
-  [CHAIN_ID_KARURA]: "#FF4B3B",
-  [CHAIN_ID_ACALA]: "##E00F51",
-};
-
-export interface ParsedCumulativeTVL {
-  date: Date; // TODO: date migghat be misnomer?
-  tvl: number;
+export interface CumulativeTVLEntry {
+  date: Date;
+  totalTVL: number;
   tvlByChain: {
     [chainId: string]: number;
   };
 }
 
-export const parseCumulativeTVL = (
+export const createCumulativeTVLArray = (
   notionalTVLCumulative: NotionalTVLCumulative,
   timeFrame: TimeFrame
-): ParsedCumulativeTVL[] => {
-  const sortedDates = Object.keys(notionalTVLCumulative.DailyLocked).sort();
-  return sortedDates
-    .reduce<ParsedCumulativeTVL[]>((accum, date) => {
-      const chainsAssets = notionalTVLCumulative.DailyLocked[date];
-      const bucketDate = new Date(
-        timeFrame.interval === "Monthly" ? date.slice(0, 7) : date
-      );
-      let entry = accum[accum.length - 1];
-      if (
-        entry === undefined ||
-        entry.date.getTime() !== bucketDate.getTime()
-      ) {
-        entry = {
-          date: bucketDate,
-          tvl: 0,
-          tvlByChain: {},
-        };
-        accum.push(entry);
-      }
-      // TODO: chain 56 and 0 are bad
-      Object.entries(chainsAssets).forEach(([chainId, lockedAssets]) => {
-        const notional = lockedAssets["*"].Notional;
-        if (chainId === "*") {
-          entry.tvl = notional;
-        } else {
-          entry.tvlByChain[chainId] = notional;
+): CumulativeTVLEntry[] => {
+  const startDate = timeFrame.duration
+    ? DateTime.now().minus(timeFrame.duration).toJSDate()
+    : undefined;
+  return Object.entries(notionalTVLCumulative.DailyLocked)
+    .reduce<CumulativeTVLEntry[]>(
+      (cumulativeTVLArray, [dateString, chainsAssets]) => {
+        const date = new Date(dateString);
+        if (!startDate || date >= startDate) {
+          const entry: CumulativeTVLEntry = {
+            date: date,
+            totalTVL: 0,
+            tvlByChain: {},
+          };
+          // TODO: chain 56 and 0 are bad
+          Object.entries(chainsAssets).forEach(([chainId, lockedAssets]) => {
+            const notional = lockedAssets["*"].Notional;
+            if (chainId === "*") {
+              entry.totalTVL = notional;
+            } else {
+              entry.tvlByChain[chainId] = notional;
+            }
+          });
+          cumulativeTVLArray.push(entry);
         }
-      });
-      return accum;
-    }, [])
-    .slice(timeFrame.count ? -timeFrame.count : 0);
+        return cumulativeTVLArray;
+      },
+      []
+    )
+    .sort((a, b) => a.date.getTime() - b.date.getTime());
 };
 
-export interface NotionalTransferredEntry {
+export interface AggregatedNotionalTransferred {
   date: Date;
-  totalValue: number;
-  valueByChain: {
+  totalTransferred: number;
+  transferredByChain: {
     [chainId: string]: number;
   };
 }
 
-export const parseNotionalTransferred = (
+export const aggregateNotionalTransferred = (
   notionalTransferred: NotionalTransferred,
   timeFrame: TimeFrame
 ) => {
+  /*
   const sortedDates = Object.keys(notionalTransferred.Daily).sort();
   return sortedDates
-    .reduce<NotionalTransferredEntry[]>((accum, date) => {
+    .reduce<AggregatedNotionalTransferred[]>((data, date) => {
       const transferData = notionalTransferred.Daily[date];
-      const bucketDate = new Date(
+      const dateKey = new Date(
         timeFrame.interval === "Monthly" ? date.slice(0, 7) : date
       );
-      let entry = accum[accum.length - 1];
-      if (
-        entry === undefined ||
-        entry.date.getTime() !== bucketDate.getTime()
-      ) {
+      let entry = data[data.length - 1];
+      if (entry === undefined || entry.date.getTime() !== dateKey.getTime()) {
         entry = {
-          date: bucketDate,
-          totalValue: 0,
-          valueByChain: {},
+          date: dateKey,
+          totalTransferred: 0,
+          transferredByChain: {},
         };
-        accum.push(entry);
+        data.push(entry);
       }
       // TODO: chain 56 and 0 are bad
       Object.entries(transferData).forEach(([chainId, lockedAssets]) => {
         const value = lockedAssets["*"]["*"];
         if (chainId === "*") {
-          entry.totalValue += value;
+          entry.totalTransferred += value;
         } else {
-          entry.valueByChain[chainId] =
-            (entry.valueByChain[chainId] || 0) + value;
+          entry.transferredByChain[chainId] =
+            (entry.transferredByChain[chainId] || 0) + value;
         }
       });
-      return accum;
+      return data;
     }, [])
     .slice(timeFrame.count ? -timeFrame.count : 0);
+    */
+  return [];
+};
+
+export interface AggregatedTransactions {
+  date: Date;
+  totalTransactions: number;
+  transactionsByChain: {
+    [chainId: string]: number;
+  };
+}
+
+export const aggregateTransactions = (
+  transactionCount: TransactionCount,
+  timeFrame: TimeFrame
+) => {
+  /*
+  const sortedDates = Object.keys(transactionCount.dailyTotals).sort();
+  return sortedDates
+    .reduce<AggregatedTransactions[]>((data, date) => {
+      const transferData = transactionCount.dailyTotals[date];
+      const dateKey = new Date(
+        timeFrame.interval === "Monthly" ? date.slice(0, 7) : date
+      );
+      let entry = data[data.length - 1];
+      if (entry === undefined || entry.date.getTime() !== dateKey.getTime()) {
+        entry = {
+          date: dateKey,
+          totalTransactions: 0,
+          transactionsByChain: {},
+        };
+        data.push(entry);
+      }
+      // TODO: chain 56 and 0 are bad
+      Object.entries(transferData).forEach(([chainId, count]) => {
+        console.log(chainId);
+        if (chainId === "*") {
+          entry.totalTransactions += count;
+        } else {
+          entry.transactionsByChain[chainId] =
+            (entry.transactionsByChain[chainId] || 0) + count;
+        }
+      });
+      return data;
+    }, [])
+    .slice(timeFrame.count ? -timeFrame.count : 0);
+    */
+  return [];
 };

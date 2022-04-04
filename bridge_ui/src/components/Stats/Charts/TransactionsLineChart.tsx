@@ -14,7 +14,7 @@ import {
 } from "../../../utils/consts";
 import { formatDate, formatTVL } from "./utils";
 
-const VolumeLineChart = ({
+const TransactionsLineChart = ({
   data,
   selectedChains,
 }: {
@@ -32,14 +32,14 @@ const VolumeLineChart = ({
           tickLine={false}
         />
         <YAxis
-          tickFormatter={formatTVL}
+          // tickFormatter={formatTVL}
           tick={{ fill: "white" }}
           axisLine={false}
           tickLine={false}
         />
         {selectedChains.map((chainId) => (
           <Line
-            dataKey={`volumeByChain.${chainId}`}
+            dataKey={`transactionsByChain.${chainId}`}
             name={getChainShortName(chainId)}
             stroke={COLOR_BY_CHAIN_ID[chainId]}
             strokeWidth="4"
@@ -53,4 +53,4 @@ const VolumeLineChart = ({
   );
 };
 
-export default VolumeLineChart;
+export default TransactionsLineChart;

@@ -6,78 +6,92 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { formatDate, formatTVL, parseCumulativeTVL } from "./utils";
+import { formatDate, formatTVL, createCumulativeTVLArray } from "./utils";
 import { NotionalTVLCumulative } from "../../../hooks/useCumulativeTVL";
 import { useMemo } from "react";
-import { TimeFrame, TIME_FRAMES } from "./TimeFrame";
-import { Grid, Typography } from "@material-ui/core";
+import { TimeFrame } from "./TimeFrame";
+import { makeStyles, Typography } from "@material-ui/core";
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+// TODO: move this into styles?
+const useStyles = makeStyles(() => ({
+  tooltipContainer: {
+    padding: "16px",
+    width: "214px",
+    background: "rgba(255, 255, 255, 0.95)",
+    borderRadius: "4px",
+  },
+  tooltipTitleText: {
+    color: "#21227E",
+    fontSize: "24px",
+    fontWeight: 500,
+  },
+  tooltipRuler: {
+    height: "3px",
+    backgroundImage: "linear-gradient(90deg, #F44B1B 0%, #EEB430 100%)",
+  },
+  tooltipValueText: {
+    color: "#404040",
+    fontSize: "18px",
+    fontWeight: 500,
+  },
+}));
+
+const CustomTooltip = ({ active, payload }: any) => {
+  const classes = useStyles();
   if (active && payload && payload.length) {
+    const data = payload[0].payload;
     return (
-      <div style={{ background: "white" }}>
-        <Typography
-          style={{
-            color: "#21227E",
-            fontSize: "24px",
-            fontWeight: 500,
-            lineHeight: "36px",
-          }}
-        >
-          TVL
+      <div className={classes.tooltipContainer}>
+        <Typography className={classes.tooltipTitleText}>TVL</Typography>
+        <hr className={classes.tooltipRuler}></hr>
+        <Typography className={classes.tooltipValueText}>
+          {formatTVL(data.totalTVL)}
         </Typography>
-        <hr
-          style={{
-            width: "182px",
-            top: "8px",
-            border: "3px solid",
-            background: "linear-gradient(90deg, #F44B1B 0%, #EEB430 100%)",
-            // fill: "url(#colorUv)",
-          }}
-        ></hr>
-        <Grid container justify="space-between">
-          <Typography
-            display="inline"
-            style={{ color: "#404040", fontSize: "18px", lineHeight: "24px" }}
-            align="left"
-          >
-            {formatTVL(payload[0].value)}
-          </Typography>
-          <Typography
-            display="inline"
-            style={{ color: "#404040CC", fontSize: "14px", lineHeight: "18px" }}
-            align="right"
-          >
-            {formatDate(label)}
-          </Typography>
-        </Grid>
+        <Typography className={classes.tooltipValueText}>
+          {formatDate(data.date)}
+        </Typography>
       </div>
     );
   }
-
   return null;
+};
+
+const tickFormatter = (dateMs: number) => {
+  return new Date(dateMs).toLocaleDateString("en-US", {
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const tickFormatterDaily = (dateMs: number) => {
+  return new Date(dateMs).toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 };
 
 const TVLAreaChart = ({
   cumulativeTVL,
   timeFrame,
 }: {
-  cumulativeTVL: NotionalTVLCumulative | null;
-  timeFrame: string;
+  cumulativeTVL: NotionalTVLCumulative;
+  timeFrame: TimeFrame;
 }) => {
-  const parsedCumulativeTVL = useMemo(() => {
-    return cumulativeTVL != null
-      ? parseCumulativeTVL(cumulativeTVL, TIME_FRAMES[timeFrame])
-      : [];
+  const cumulativeTVLArray = useMemo(() => {
+    return createCumulativeTVLArray(cumulativeTVL, timeFrame);
   }, [cumulativeTVL, timeFrame]);
 
   return (
     <ResponsiveContainer>
-      <AreaChart data={parsedCumulativeTVL}>
+      <AreaChart data={cumulativeTVLArray}>
         <XAxis
           dataKey="date"
-          tickFormatter={formatDate}
+          tickFormatter={
+            timeFrame.interval === 30 ? tickFormatter : tickFormatterDaily
+          }
           tick={{ fill: "white" }}
+          interval={timeFrame.interval}
           axisLine={false}
           tickLine={false}
         />
@@ -89,25 +103,12 @@ const TVLAreaChart = ({
         />
         <Tooltip content={<CustomTooltip />} />
         <defs>
-          <linearGradient
-            id="colorUv"
-            x1="0"
-            y1="0"
-            x2="0"
-            y2="1"
-            // gradientTransform="rotate(0deg)"
-            // rotate="226.4deg" // TODO: not sure this is right?
-          >
-            <stop offset="0%" stopColor="#FF2B57" stopOpacity={1} />
-            <stop offset="102.46%" stopColor="#5EA1EC" stopOpacity={1} />
+          <linearGradient id="gradient" gradientTransform="rotate(100)">
+            <stop offset="0%" stopColor="#FF2B57" />
+            <stop offset="100%" stopColor="#5EA1EC" />
           </linearGradient>
         </defs>
-        <Area
-          type="monotone"
-          dataKey="tvl"
-          stroke="#405BBC"
-          fill="url(#colorUv)"
-        />
+        <Area dataKey="totalTVL" fill="url(#gradient)" stroke="#405BBC" />
       </AreaChart>
     </ResponsiveContainer>
   );

@@ -1,6 +1,7 @@
 import {
   Button,
   Checkbox,
+  CircularProgress,
   FormControl,
   ListItemText,
   makeStyles,
@@ -10,6 +11,7 @@ import {
   TextField,
   Tooltip,
   Typography,
+  withStyles,
 } from "@material-ui/core";
 import { ToggleButton, ToggleButtonGroup } from "@material-ui/lab";
 import { useCallback, useMemo, useState } from "react";
@@ -25,8 +27,6 @@ import ChainTVLTable from "./Charts/ChainTVLTable";
 import useTVLNew from "../../hooks/useTVL";
 import { ArrowBack, InfoOutlined } from "@material-ui/icons";
 
-const DISPLAY_BY_VALUES = ["Time", "Chain"];
-
 const useStyles = makeStyles((theme) => ({
   description: {
     display: "flex",
@@ -40,6 +40,9 @@ const useStyles = makeStyles((theme) => ({
     marginBottom: "16px",
   },
   mainPaper: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: COLORS.whiteWithTransparency,
     padding: "2rem",
     marginBottom: theme.spacing(8),
@@ -51,6 +54,8 @@ const useStyles = makeStyles((theme) => ({
   tooltip: {
     marginLeft: "8px",
     marginBottom: "16px",
+    // padding: "8px",
+    // borderRadius: "4px",
   },
   tvlText: {
     // styleName: "Heading 36",
@@ -64,6 +69,25 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
+const tooltipStyles = {
+  tooltip: {
+    minWidth: "max-content",
+    // textAlign: "center",
+    borderRadius: "4px",
+    backgroundColor: "#5EA1EC",
+    color: "#0F0C48",
+    fontSize: "14px",
+    // "& > *": {
+    // margin: ".25rem",
+    // },
+  },
+};
+
+//@ts-ignore
+const StyledTooltip = withStyles(tooltipStyles)(Tooltip);
+
+const DISPLAY_BY_VALUES = ["Time", "Chain"];
+
 const TVLStats = () => {
   const classes = useStyles();
 
@@ -76,16 +100,8 @@ const TVLStats = () => {
     useState<ChainInfo | null>(null);
 
   // TODO: should probably pass this in
-  const { cumulativeTVL } = useCumulativeTVL();
+  const cumulativeTVL = useCumulativeTVL();
   const { tvl } = useTVLNew();
-
-  //const chainTVL = useMemo(() => {
-  //  return selectedChainDetail && tvl.data
-  //    ? tvl.reduce((sum, x) =>
-  //        x.chainId === selectedChainDetail.id ? sum + x.tvl : sum;
-  //      , 0)
-  //    : null;
-  //}, [tvl, selectedChainDetail]);
 
   // TODO: placeholder number until I figure out why tvl numbers don't match (all time and cumulative today)
   const allTimeTVL = useMemo(() => {
@@ -94,30 +110,31 @@ const TVLStats = () => {
       currency: "USD",
       maximumFractionDigits: 0,
     });
-    if (!selectedChainDetail)
-      return formatter.format(tvl?.AllTime["*"]["*"].Notional || 0);
     return formatter.format(
-      tvl?.AllTime[selectedChainDetail.id]["*"].Notional || 0
+      (selectedChainDetail
+        ? tvl?.AllTime[selectedChainDetail.id]["*"].Notional
+        : tvl?.AllTime["*"]["*"].Notional) || 0
     );
   }, [selectedChainDetail, tvl]);
 
   const availableChains = useMemo(() => {
-    const chainIds = cumulativeTVL
-      ? Object.keys(Object.values(cumulativeTVL.DailyLocked)[0] || {})
-          .reduce<ChainId[]>((accum, key) => {
-            const chainId = parseInt(key) as ChainId;
-            if (CHAINS_BY_ID[chainId] !== undefined) {
-              accum.push(chainId);
-            }
-            return accum;
-          }, [])
+    const chainIds = cumulativeTVL.data
+      ? Object.keys(
+          Object.values(cumulativeTVL.data.DailyLocked)[0] || {}
+        ).reduce<ChainId[]>((chainIds, key) => {
+          const chainId = parseInt(key) as ChainId;
+          if (CHAINS_BY_ID[chainId]) {
+            chainIds.push(chainId);
+          }
+          return chainIds;
+        }, [])
       : [];
     setSelectedChains(chainIds);
     return chainIds;
   }, [cumulativeTVL]);
 
   const handleDisplayByChange = useCallback((event, nextValue) => {
-    if (nextValue !== null) {
+    if (nextValue) {
       setDisplayBy(nextValue);
     }
   }, []);
@@ -158,9 +175,9 @@ const TVLStats = () => {
       <div className={classes.description}>
         <Typography display="inline" variant="h3" className={classes.tvlText}>
           {tvlText}
-          <Tooltip title={tooltipText} arrow className={classes.tooltip}>
+          <StyledTooltip title={tooltipText} className={classes.tooltip}>
             <InfoOutlined />
-          </Tooltip>
+          </StyledTooltip>
         </Typography>
         <Typography
           display="inline"
@@ -182,7 +199,11 @@ const TVLStats = () => {
               onChange={handleDisplayByChange}
             >
               {DISPLAY_BY_VALUES.map((value) => (
-                <ToggleButton value={value} className={classes.toggleButton}>
+                <ToggleButton
+                  key={value}
+                  value={value}
+                  className={classes.toggleButton}
+                >
                   {value}
                 </ToggleButton>
               ))}
@@ -252,14 +273,21 @@ const TVLStats = () => {
       </div>
       <Paper className={classes.mainPaper}>
         {displayBy === "Time" ? (
-          allChainsSelected ? (
-            <TVLAreaChart cumulativeTVL={cumulativeTVL} timeFrame={timeFrame} />
+          cumulativeTVL.data ? (
+            allChainsSelected ? (
+              <TVLAreaChart
+                cumulativeTVL={cumulativeTVL.data}
+                timeFrame={TIME_FRAMES[timeFrame]}
+              />
+            ) : (
+              <TVLLineChart
+                cumulativeTVL={cumulativeTVL.data}
+                timeFrame={TIME_FRAMES[timeFrame]}
+                selectedChains={selectedChains}
+              />
+            )
           ) : (
-            <TVLLineChart
-              cumulativeTVL={cumulativeTVL}
-              timeFrame={timeFrame}
-              selectedChains={selectedChains}
-            />
+            <CircularProgress />
           )
         ) : selectedChainDetail ? (
           <ChainTVLTable chainInfo={selectedChainDetail} />

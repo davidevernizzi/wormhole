@@ -1,6 +1,7 @@
 import {
   ChainId,
   CHAIN_ID_ACALA,
+  CHAIN_ID_ALGORAND,
   CHAIN_ID_AURORA,
   CHAIN_ID_AVAX,
   CHAIN_ID_BSC,
@@ -1220,3 +1221,22 @@ export const ACALA_RELAYER_URL =
 
 export const ACALA_RELAY_URL = `${ACALA_RELAYER_URL}/relay`;
 export const ACALA_SHOULD_RELAY_URL = `${ACALA_RELAYER_URL}/shouldRelay`;
+
+export const getChainShortName = (chainId: ChainId) => {
+  return chainId === CHAIN_ID_BSC ? "BSC" : CHAINS_BY_ID[chainId]?.name;
+};
+
+export const COLOR_BY_CHAIN_ID: { [key in ChainId]?: string } = {
+  [CHAIN_ID_SOLANA]: "#31D7BB",
+  [CHAIN_ID_ETH]: "#8A92B2",
+  [CHAIN_ID_TERRA]: "#5493F7",
+  [CHAIN_ID_BSC]: "#F0B90B",
+  [CHAIN_ID_POLYGON]: "#8247E5",
+  [CHAIN_ID_AVAX]: "#E84142",
+  [CHAIN_ID_OASIS]: "#0092F6",
+  [CHAIN_ID_ALGORAND]: "#000000",
+  [CHAIN_ID_AURORA]: "#23685A",
+  [CHAIN_ID_FANTOM]: "#1969FF",
+  [CHAIN_ID_KARURA]: "#FF4B3B",
+  [CHAIN_ID_ACALA]: "#E00F51",
+};

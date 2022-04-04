@@ -7,7 +7,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { AggregatedNotionalTransferred, formatDate, formatTVL } from "./utils";
+import { formatDate, formatTVL } from "./utils";
 
 const useStyles = makeStyles(() => ({
   tooltipContainer: {
@@ -35,16 +35,12 @@ const useStyles = makeStyles(() => ({
 const CustomTooltip = ({ active, payload }: any) => {
   const classes = useStyles();
   if (active && payload && payload.length) {
-    const data = payload[0];
     return (
       <div className={classes.tooltipContainer}>
         <Typography className={classes.tooltipTitleText}>All chains</Typography>
         <hr className={classes.tooltipRuler}></hr>
         <Typography className={classes.tooltipValueText}>
-          {formatTVL(data.value)}
-        </Typography>
-        <Typography className={classes.tooltipValueText}>
-          {formatDate(data.date)}
+          {`${payload[0].value} transactions`}
         </Typography>
       </div>
     );
@@ -52,11 +48,7 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-const VolumeAreaChart = ({
-  data,
-}: {
-  data: AggregatedNotionalTransferred[];
-}) => {
+const TransactionsAreaChart = ({ data }: { data: any[] }) => {
   return (
     <ResponsiveContainer>
       <AreaChart data={data}>
@@ -90,7 +82,7 @@ const VolumeAreaChart = ({
         </defs>
         <Area
           type="monotone"
-          dataKey="totalTransferred"
+          dataKey="totalTransactions"
           stroke="#405BBC"
           fill="url(#colorUv)"
         />
@@ -99,4 +91,4 @@ const VolumeAreaChart = ({
   );
 };
 
-export default VolumeAreaChart;
+export default TransactionsAreaChart;

@@ -20,10 +20,16 @@ import useNotionalTransferred, {
 import { COLORS } from "../../muiTheme";
 import { CHAINS_BY_ID } from "../../utils/consts";
 import { TIME_FRAMES } from "./Charts/TimeFrame";
-import { parseNotionalTransferred } from "./Charts/utils";
+import {
+  aggregateNotionalTransferred,
+  aggregateTransactions,
+} from "./Charts/utils";
 import VolumeAreaChart from "./Charts/VolumeAreaChart";
 import VolumeStackedBarChart from "./Charts/VolumeStackedBarChart";
 import VolumeLineChart from "./Charts/VolumeLineChart";
+import useTransactionCount from "../../hooks/useTransactionCount";
+import TransactionsAreaChart from "./Charts/TransactionsAreaChart ";
+import TransactionsLineChart from "./Charts/TransactionsLineChart";
 
 const DISPLAY_BY_VALUES = ["Dollar", "Percent", "Transactions"];
 
@@ -64,16 +70,22 @@ const VolumeStats = () => {
 
   const notionalTransferred = useNotionalTransferred();
 
-  const notionalTransferredArray = useMemo(() => {
+  const aggregatedNotionalTransferred = useMemo(() => {
     return notionalTransferred.data
-      ? parseNotionalTransferred(
+      ? aggregateNotionalTransferred(
           notionalTransferred.data,
           TIME_FRAMES[timeFrame]
         )
       : [];
   }, [notionalTransferred, timeFrame]);
 
-  console.log(notionalTransferredArray);
+  const transactions = useTransactionCount();
+
+  const aggregatedTransactions = useMemo(() => {
+    return transactions.data
+      ? aggregateTransactions(transactions.data, TIME_FRAMES[timeFrame])
+      : [];
+  }, [transactions, timeFrame]);
 
   const availableChains = useMemo(() => {
     const chainIds = notionalTransferred.data
@@ -149,7 +161,11 @@ const VolumeStats = () => {
           onChange={handleDisplayByChange}
         >
           {DISPLAY_BY_VALUES.map((value) => (
-            <ToggleButton value={value} className={classes.toggleButton}>
+            <ToggleButton
+              key={value}
+              value={value}
+              className={classes.toggleButton}
+            >
               {value}
             </ToggleButton>
           ))}
@@ -201,18 +217,25 @@ const VolumeStats = () => {
         </TextField>
       </div>
       <Paper className={classes.mainPaper}>
-        {displayBy === "Dollar" || displayBy === "Transactions" ? (
+        {displayBy === "Dollar" ? (
           allChainsSelected ? (
-            <VolumeAreaChart data={notionalTransferredArray} />
+            <VolumeAreaChart data={aggregatedNotionalTransferred} />
           ) : (
             <VolumeLineChart
-              data={notionalTransferredArray}
+              data={aggregatedNotionalTransferred}
               selectedChains={selectedChains}
             />
           )
-        ) : (
+        ) : displayBy === "Percent" ? (
           <VolumeStackedBarChart
-            data={notionalTransferredArray}
+            notionalTransferred={aggregatedNotionalTransferred}
+            selectedChains={selectedChains}
+          />
+        ) : allChainsSelected ? (
+          <TransactionsAreaChart data={aggregatedTransactions} />
+        ) : (
+          <TransactionsLineChart
+            data={aggregatedTransactions}
             selectedChains={selectedChains}
           />
         )}

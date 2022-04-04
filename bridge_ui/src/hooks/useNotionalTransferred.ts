@@ -7,7 +7,7 @@ import {
   receiveDataWrapper,
 } from "../store/helpers";
 
-export interface TransferData {
+export interface BidirectionalTransferData {
   [leavingChainId: string]: {
     [destinationChainId: string]: {
       [tokenSymbol: string]: number;
@@ -16,11 +16,11 @@ export interface TransferData {
 }
 
 export interface NotionalTransferred {
-  Last24Hours: TransferData;
-  WithinPeriod: TransferData;
+  Last24Hours: BidirectionalTransferData;
+  WithinPeriod: BidirectionalTransferData;
   PeriodDurationDays: number;
   Daily: {
-    [date: string]: TransferData;
+    [date: string]: BidirectionalTransferData;
   };
 }
 

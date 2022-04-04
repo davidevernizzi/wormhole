@@ -165,7 +165,7 @@ const ChainTVLChart = ({
           // label={{formatter:(value: any) => formatTVL(value), position: "end"}}
         >
           <LabelList
-            dataKey="tvl"
+            dataKey="totalTVL"
             content={<CustomizedLabel />}
             fill="white"
             position="right"

@@ -7,13 +7,28 @@ import {
   VAA_EMITTER_ADDRESSES,
 } from "../utils/consts";
 
+export interface Totals {
+  LastDayCount: { [groupByKey: string]: number };
+  TotalCount: { [groupByKey: string]: number };
+  DailyTotals: {
+    // "2021-08-22": { "*": 0 },
+    [date: string]: { [groupByKey: string]: number };
+  };
+}
+
 export type TransactionCount = {
   totalAllTime: number;
   total48h: number;
   mostRecent: any; //This will be a signedVAA
+  dailyTotals: {
+    [date: string]: { [groupByKey: string]: number };
+  };
 };
 
-const mergeResults = (totals: any, recents: any): TransactionCount | null => {
+const mergeResults = (
+  totals: Totals | null,
+  recents: any
+): TransactionCount | null => {
   let totalAllTime = 0;
   let total48h = 0;
   const lastDays = Object.values(totals?.DailyTotals || {});
@@ -33,11 +48,12 @@ const mergeResults = (totals: any, recents: any): TransactionCount | null => {
     totalAllTime,
     total48h,
     mostRecent: null,
+    dailyTotals: totals?.DailyTotals || {},
   };
 };
 
 const useTransactionCount = (): DataWrapper<TransactionCount> => {
-  const [totals, setTotals] = useState(null);
+  const [totals, setTotals] = useState<Totals | null>(null);
   const [recents, setRecents] = useState(null);
 
   const [loadingTotals, setLoadingTotals] = useState(false);
@@ -46,43 +62,43 @@ const useTransactionCount = (): DataWrapper<TransactionCount> => {
   const [totalsError, setTotalsError] = useState("");
   const [recentsError, setRecentsError] = useState("");
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoadingTotals(true);
-    axios.get(TOTAL_TRANSACTIONS_WORMHOLE).then(
-      (results) => {
-        if (!cancelled) {
-          setTotals(results.data);
-          setLoadingTotals(false);
-        }
-      },
-      (error) => {
-        if (!cancelled) {
-          setTotalsError("Unable to retrieve transaction totals.");
-          setLoadingTotals(false);
-        }
-      }
-    );
-  }, []);
+  //useEffect(() => {
+  //  let cancelled = false;
+  //  setLoadingTotals(true);
+  //  axios.get(TOTAL_TRANSACTIONS_WORMHOLE).then(
+  //    (results) => {
+  //      if (!cancelled) {
+  //        setTotals(results.data);
+  //        setLoadingTotals(false);
+  //      }
+  //    },
+  //    (error) => {
+  //      if (!cancelled) {
+  //        setTotalsError("Unable to retrieve transaction totals.");
+  //        setLoadingTotals(false);
+  //      }
+  //    }
+  //  );
+  //}, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoadingRecents(true);
-    axios.get(RECENT_TRANSACTIONS_WORMHOLE).then(
-      (results) => {
-        if (!cancelled) {
-          setRecents(results.data);
-          setLoadingRecents(false);
-        }
-      },
-      (error) => {
-        if (!cancelled) {
-          setRecentsError("Unable to retrieve recent transactions.");
-          setLoadingRecents(false);
-        }
-      }
-    );
-  }, []);
+  //useEffect(() => {
+  //  let cancelled = false;
+  //  setLoadingRecents(true);
+  //  axios.get(RECENT_TRANSACTIONS_WORMHOLE).then(
+  //    (results) => {
+  //      if (!cancelled) {
+  //        setRecents(results.data);
+  //        setLoadingRecents(false);
+  //      }
+  //    },
+  //    (error) => {
+  //      if (!cancelled) {
+  //        setRecentsError("Unable to retrieve recent transactions.");
+  //        setLoadingRecents(false);
+  //      }
+  //    }
+  //  );
+  //}, []);
 
   return useMemo(() => {
     const data = mergeResults(totals, recents);
