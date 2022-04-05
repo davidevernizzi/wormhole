@@ -31,6 +31,7 @@ const useNotionalTransferred = () => {
 
   useEffect(() => {
     let cancelled = false;
+    // https://europe-west3-wormhole-315720.cloudfunctions.net/mainnet-notionaltransferred?forPeriod=true&daily=true&numDays=207
     axios
       .get<NotionalTransferred>("./notionaltransferred.json")
       .then((response) => {
@@ -41,8 +42,8 @@ const useNotionalTransferred = () => {
       .catch((error) => {
         if (!cancelled) {
           setNotionalTransferred(errorDataWrapper(error));
+          console.error(error);
         }
-        console.error(error);
       });
     return () => {
       cancelled = true;

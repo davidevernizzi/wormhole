@@ -1,25 +1,7 @@
-import { BigNumber } from "@ethersproject/bignumber";
-import { formatUnits, parseUnits } from "@ethersproject/units";
-import {
-  CircularProgress,
-  Container,
-  makeStyles,
-  Paper,
-  Typography,
-} from "@material-ui/core";
-import clsx from "clsx";
-import numeral from "numeral";
-import { useMemo } from "react";
-import useTVL from "../../hooks/useTVL";
+import { Container, makeStyles } from "@material-ui/core";
 import { COLORS } from "../../muiTheme";
 import HeaderText from "../HeaderText";
-import SmartAddress from "../SmartAddress";
-import { balancePretty } from "../TokenSelectors/TokenPicker";
 import TVLStats from "./TVLStats";
-import CustodyAddresses from "./CustodyAddresses";
-import NFTStats from "./NFTStats";
-import MuiReactTable from "./tableComponents/MuiReactTable";
-import TransactionMetrics from "./TransactionMetrics";
 import VolumeStats from "./VolumeStats";
 
 const useStyles = makeStyles((theme) => ({
@@ -121,9 +103,9 @@ const StatsRoot = () => {
         ) : null*/}
       </div>
       {/* <Paper className={classes.mainPaper}> */}
-        <TVLStats />
-        <VolumeStats />
-        {/*!tvl.isFetching ? (
+      <TVLStats />
+      <VolumeStats />
+      {/*!tvl.isFetching ? (
           <MuiReactTable
             columns={tvlColumns}
             data={tvl.data || []}

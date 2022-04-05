@@ -1035,7 +1035,8 @@ export const TERRA_FCD_BASE =
     : "http://localhost:3060";
 export const TERRA_GAS_PRICES_URL = `${TERRA_FCD_BASE}/v1/txs/gas_prices`;
 
-export const TOTAL_TRANSACTIONS_WORMHOLE = `https://europe-west3-wormhole-315720.cloudfunctions.net/mainnet-totals?groupBy=address`;
+export const TOTAL_TRANSACTIONS_WORMHOLE =
+  "https://europe-west3-wormhole-315720.cloudfunctions.net/mainnet-totals/groupBy=address";
 
 export const RECENT_TRANSACTIONS_WORMHOLE = `https://europe-west3-wormhole-315720.cloudfunctions.net/mainnet-recent?groupBy=address&numRows=2`;
 

@@ -15,7 +15,8 @@ import {
   COLOR_BY_CHAIN_ID,
   getChainShortName,
 } from "../../../utils/consts";
-import { formatDate, AggregatedNotionalTransferred, formatTVL } from "./utils";
+import { TimeFrame } from "./TimeFrame";
+import { formatDate, TransferData, formatTVL } from "./utils";
 
 const useStyles = makeStyles(() => ({
   tooltipContainer: {
@@ -55,16 +56,16 @@ interface BarData {
 }
 
 const createBarData = (
-  notionalTransferred: AggregatedNotionalTransferred[],
+  transferData: TransferData[],
   selectedChains: ChainId[]
 ) => {
-  return notionalTransferred.reduce<BarData[]>((barData, transferData) => {
+  return transferData.reduce<BarData[]>((barData, transfer) => {
     const data: BarData = {
-      date: transferData.date,
+      date: transfer.date,
       volume: {},
       volumePercent: {},
     };
-    const totalVolume = Object.entries(transferData.transferredByChain).reduce(
+    const totalVolume = Object.entries(transfer.transferredByChain).reduce(
       (totalVolume, [chainId, volume]) => {
         if (selectedChains.indexOf(+chainId as ChainId) > -1) {
           data.volume[chainId] = volume;
@@ -113,6 +114,9 @@ const CustomTooltip = ({ active, payload, chainId }: any) => {
           <Typography className={classes.tooltipValueText}>
             {formatTVL(data.payload.volume[chainId])}
           </Typography>
+          <Typography className={classes.tooltipValueText}>
+            {formatDate(data.payload.date)}
+          </Typography>
         </div>
       );
     }
@@ -121,25 +125,28 @@ const CustomTooltip = ({ active, payload, chainId }: any) => {
 };
 
 const VolumeStackedBarChart = ({
-  notionalTransferred,
+  transferData,
+  timeFrame,
   selectedChains,
 }: {
-  notionalTransferred: AggregatedNotionalTransferred[];
+  transferData: TransferData[];
+  timeFrame: TimeFrame;
   selectedChains: ChainId[];
 }) => {
   const [hoverChainId, setHoverChainId] = useState<ChainId | null>(null);
 
   const barData = useMemo(() => {
-    return createBarData(notionalTransferred, selectedChains);
-  }, [notionalTransferred, selectedChains]);
+    return createBarData(transferData, selectedChains);
+  }, [transferData, selectedChains]);
 
   return (
-    <ResponsiveContainer>
+    <ResponsiveContainer height={768}>
       <BarChart data={barData}>
         <XAxis
           dataKey="date"
-          tickFormatter={formatDate}
+          tickFormatter={timeFrame.tickFormatter}
           tick={{ fill: "white" }}
+          interval={timeFrame.interval}
           axisLine={false}
           tickLine={false}
         />

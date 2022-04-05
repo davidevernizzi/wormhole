@@ -7,7 +7,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { AggregatedNotionalTransferred, formatDate, formatTVL } from "./utils";
+import { TimeFrame } from "./TimeFrame";
+import { TransferData, formatDate, formatTVL } from "./utils";
 
 const useStyles = makeStyles(() => ({
   tooltipContainer: {
@@ -44,7 +45,7 @@ const CustomTooltip = ({ active, payload }: any) => {
           {formatTVL(data.value)}
         </Typography>
         <Typography className={classes.tooltipValueText}>
-          {formatDate(data.date)}
+          {formatDate(data.payload.date)}
         </Typography>
       </div>
     );
@@ -53,17 +54,20 @@ const CustomTooltip = ({ active, payload }: any) => {
 };
 
 const VolumeAreaChart = ({
-  data,
+  transferData,
+  timeFrame,
 }: {
-  data: AggregatedNotionalTransferred[];
+  transferData: TransferData[];
+  timeFrame: TimeFrame;
 }) => {
   return (
-    <ResponsiveContainer>
-      <AreaChart data={data}>
+    <ResponsiveContainer height={768}>
+      <AreaChart data={transferData}>
         <XAxis
           dataKey="date"
-          tickFormatter={formatDate}
+          tickFormatter={timeFrame.tickFormatter}
           tick={{ fill: "white" }}
+          interval={timeFrame.interval}
           axisLine={false}
           tickLine={false}
         />
@@ -75,24 +79,15 @@ const VolumeAreaChart = ({
         />
         <Tooltip content={<CustomTooltip />} />
         <defs>
-          <linearGradient
-            id="colorUv"
-            x1="0"
-            y1="0"
-            x2="0"
-            y2="1"
-            // gradientTransform="rotate(0deg)"
-            // rotate="226.4deg" // TODO: not sure this is right?
-          >
-            <stop offset="0%" stopColor="#FF2B57" stopOpacity={1} />
-            <stop offset="102.46%" stopColor="#5EA1EC" stopOpacity={1} />
+          <linearGradient id="gradient" gradientTransform="rotate(100)">
+            <stop offset="0%" stopColor="#FF2B57" />
+            <stop offset="100%" stopColor="#5EA1EC" />
           </linearGradient>
         </defs>
         <Area
-          type="monotone"
           dataKey="totalTransferred"
           stroke="#405BBC"
-          fill="url(#colorUv)"
+          fill="url(#gradient)"
         />
       </AreaChart>
     </ResponsiveContainer>

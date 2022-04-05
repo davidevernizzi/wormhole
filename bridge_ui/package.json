@@ -64,6 +64,7 @@
   },
   "devDependencies": {
     "@truffle/hdwallet-provider": "^1.4.1",
+    "@types/luxon": "^2.3.1",
     "@types/node": "^16.6.1",
     "@types/numeral": "^2.0.2",
     "@types/react-router-dom": "^5.1.8",
@@ -79,6 +80,7 @@
     "https-browserify": "^1.0.0",
     "jest": "^26.6.0",
     "jest-watch-typeahead": "^0.6.4",
+    "luxon": "^2.3.1",
     "os-browserify": "^0.3.0",
     "path-browserify": "^1.0.1",
     "prettier": "^2.3.2",

@@ -6,7 +6,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { formatDate, formatTVL, createCumulativeTVLArray } from "./utils";
+import { formatDate, formatTVL, createCumulativeTVLData } from "./utils";
 import { NotionalTVLCumulative } from "../../../hooks/useCumulativeTVL";
 import { useMemo } from "react";
 import { TimeFrame } from "./TimeFrame";
@@ -16,7 +16,7 @@ import { makeStyles, Typography } from "@material-ui/core";
 const useStyles = makeStyles(() => ({
   tooltipContainer: {
     padding: "16px",
-    width: "214px",
+    minWidth: "214px",
     background: "rgba(255, 255, 255, 0.95)",
     borderRadius: "4px",
   },
@@ -56,21 +56,6 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-const tickFormatter = (dateMs: number) => {
-  return new Date(dateMs).toLocaleDateString("en-US", {
-    month: "short",
-    year: "numeric",
-  });
-};
-
-const tickFormatterDaily = (dateMs: number) => {
-  return new Date(dateMs).toLocaleDateString("en-US", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-};
-
 const TVLAreaChart = ({
   cumulativeTVL,
   timeFrame,
@@ -78,18 +63,16 @@ const TVLAreaChart = ({
   cumulativeTVL: NotionalTVLCumulative;
   timeFrame: TimeFrame;
 }) => {
-  const cumulativeTVLArray = useMemo(() => {
-    return createCumulativeTVLArray(cumulativeTVL, timeFrame);
+  const data = useMemo(() => {
+    return createCumulativeTVLData(cumulativeTVL, timeFrame);
   }, [cumulativeTVL, timeFrame]);
 
   return (
-    <ResponsiveContainer>
-      <AreaChart data={cumulativeTVLArray}>
+    <ResponsiveContainer height={768}>
+      <AreaChart data={data}>
         <XAxis
           dataKey="date"
-          tickFormatter={
-            timeFrame.interval === 30 ? tickFormatter : tickFormatterDaily
-          }
+          tickFormatter={timeFrame.tickFormatter}
           tick={{ fill: "white" }}
           interval={timeFrame.interval}
           axisLine={false}

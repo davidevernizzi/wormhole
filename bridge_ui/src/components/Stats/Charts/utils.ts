@@ -1,8 +1,9 @@
 import { NotionalTVLCumulative } from "../../../hooks/useCumulativeTVL";
 import { NotionalTransferred } from "../../../hooks/useNotionalTransferred";
-import { TransactionCount } from "../../../hooks/useTransactionCount";
 import { TimeFrame } from "./TimeFrame";
 import { DateTime } from "luxon";
+import { Totals } from "../../../hooks/useTransactionTotals";
+import { VAA_EMITTER_ADDRESSES } from "../../../utils/consts";
 
 export const formatTVL = (tvl: number) => {
   const [divisor, unit, fractionDigits] =
@@ -17,16 +18,39 @@ export const formatTVL = (tvl: number) => {
 };
 
 export const formatDate = (date: Date) => {
-  // TODO: this should be toLocalteDateString...
-  // why is object passed in and number and string???
-  return date.toLocaleString("en-US", {
+  return date.toLocaleDateString("en-US", {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
 };
 
-export interface CumulativeTVLEntry {
+export const formatTickDay = (date: Date | number) => {
+  return new Date(date).toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+export const formatTickMonth = (date: Date | number) => {
+  return new Date(date).toLocaleDateString("en-US", {
+    month: "short",
+    year: "numeric",
+  });
+};
+
+export const formatTransactionCount = (transactionCount: number) => {
+  return transactionCount.toLocaleString("en-US");
+};
+
+const getStartDate = (timeFrame: TimeFrame) => {
+  return timeFrame.duration
+    ? DateTime.now().minus(timeFrame.duration).toJSDate()
+    : undefined;
+};
+
+export interface CumulativeTVLData {
   date: Date;
   totalTVL: number;
   tvlByChain: {
@@ -34,42 +58,39 @@ export interface CumulativeTVLEntry {
   };
 }
 
-export const createCumulativeTVLArray = (
-  notionalTVLCumulative: NotionalTVLCumulative,
+export const createCumulativeTVLData = (
+  cumulativeTVL: NotionalTVLCumulative,
   timeFrame: TimeFrame
-): CumulativeTVLEntry[] => {
-  const startDate = timeFrame.duration
-    ? DateTime.now().minus(timeFrame.duration).toJSDate()
-    : undefined;
-  return Object.entries(notionalTVLCumulative.DailyLocked)
-    .reduce<CumulativeTVLEntry[]>(
+): CumulativeTVLData[] => {
+  const startDate = getStartDate(timeFrame);
+  return Object.entries(cumulativeTVL.DailyLocked)
+    .reduce<CumulativeTVLData[]>(
       (cumulativeTVLArray, [dateString, chainsAssets]) => {
         const date = new Date(dateString);
         if (!startDate || date >= startDate) {
-          const entry: CumulativeTVLEntry = {
+          const data: CumulativeTVLData = {
             date: date,
             totalTVL: 0,
             tvlByChain: {},
           };
-          // TODO: chain 56 and 0 are bad
           Object.entries(chainsAssets).forEach(([chainId, lockedAssets]) => {
             const notional = lockedAssets["*"].Notional;
             if (chainId === "*") {
-              entry.totalTVL = notional;
+              data.totalTVL = notional;
             } else {
-              entry.tvlByChain[chainId] = notional;
+              data.tvlByChain[chainId] = notional;
             }
           });
-          cumulativeTVLArray.push(entry);
+          cumulativeTVLArray.push(data);
         }
         return cumulativeTVLArray;
       },
       []
     )
-    .sort((a, b) => a.date.getTime() - b.date.getTime());
+    .sort((a, z) => a.date.getTime() - z.date.getTime());
 };
 
-export interface AggregatedNotionalTransferred {
+export interface TransferData {
   date: Date;
   totalTransferred: number;
   transferredByChain: {
@@ -77,45 +98,43 @@ export interface AggregatedNotionalTransferred {
   };
 }
 
-export const aggregateNotionalTransferred = (
+export const createCumulativeTransferData = (
   notionalTransferred: NotionalTransferred,
   timeFrame: TimeFrame
 ) => {
-  /*
+  const startDate = getStartDate(timeFrame);
   const sortedDates = Object.keys(notionalTransferred.Daily).sort();
   return sortedDates
-    .reduce<AggregatedNotionalTransferred[]>((data, date) => {
-      const transferData = notionalTransferred.Daily[date];
-      const dateKey = new Date(
-        timeFrame.interval === "Monthly" ? date.slice(0, 7) : date
-      );
-      let entry = data[data.length - 1];
-      if (entry === undefined || entry.date.getTime() !== dateKey.getTime()) {
-        entry = {
-          date: dateKey,
-          totalTransferred: 0,
-          transferredByChain: {},
-        };
-        data.push(entry);
-      }
-      // TODO: chain 56 and 0 are bad
-      Object.entries(transferData).forEach(([chainId, lockedAssets]) => {
-        const value = lockedAssets["*"]["*"];
-        if (chainId === "*") {
-          entry.totalTransferred += value;
-        } else {
-          entry.transferredByChain[chainId] =
-            (entry.transferredByChain[chainId] || 0) + value;
+    .reduce<TransferData[]>((transferData, date) => {
+      const bidirectionalTransferData = notionalTransferred.Daily[date];
+      const data: TransferData = {
+        date: new Date(date),
+        totalTransferred: 0,
+        transferredByChain: {},
+      };
+      Object.entries(bidirectionalTransferData).forEach(
+        ([chainId, lockedAssets]) => {
+          const value = lockedAssets["*"]["*"];
+          if (chainId === "*") {
+            data.totalTransferred =
+              value +
+              (transferData[transferData.length - 1]?.totalTransferred || 0);
+          } else {
+            data.transferredByChain[chainId] =
+              value +
+              (transferData[transferData.length - 1]?.transferredByChain[
+                chainId
+              ] || 0);
+          }
         }
-      });
-      return data;
+      );
+      transferData.push(data);
+      return transferData;
     }, [])
-    .slice(timeFrame.count ? -timeFrame.count : 0);
-    */
-  return [];
+    .filter((data) => !startDate || startDate <= data.date);
 };
 
-export interface AggregatedTransactions {
+export interface TransactionData {
   date: Date;
   totalTransactions: number;
   transactionsByChain: {
@@ -123,40 +142,30 @@ export interface AggregatedTransactions {
   };
 }
 
-export const aggregateTransactions = (
-  transactionCount: TransactionCount,
+export const createCumulativeTransactionData = (
+  totals: Totals,
   timeFrame: TimeFrame
 ) => {
-  /*
-  const sortedDates = Object.keys(transactionCount.dailyTotals).sort();
+  const startDate = getStartDate(timeFrame);
+  const sortedDates = Object.keys(totals.DailyTotals).sort();
   return sortedDates
-    .reduce<AggregatedTransactions[]>((data, date) => {
-      const transferData = transactionCount.dailyTotals[date];
-      const dateKey = new Date(
-        timeFrame.interval === "Monthly" ? date.slice(0, 7) : date
-      );
-      let entry = data[data.length - 1];
-      if (entry === undefined || entry.date.getTime() !== dateKey.getTime()) {
-        entry = {
-          date: dateKey,
-          totalTransactions: 0,
-          transactionsByChain: {},
-        };
-        data.push(entry);
-      }
-      // TODO: chain 56 and 0 are bad
-      Object.entries(transferData).forEach(([chainId, count]) => {
-        console.log(chainId);
-        if (chainId === "*") {
-          entry.totalTransactions += count;
-        } else {
-          entry.transactionsByChain[chainId] =
-            (entry.transactionsByChain[chainId] || 0) + count;
-        }
+    .reduce<TransactionData[]>((transactionData, date) => {
+      const groupByKeys = totals.DailyTotals[date];
+      const prevData = transactionData[transactionData.length - 1];
+      const data: TransactionData = {
+        date: new Date(date),
+        totalTransactions: prevData?.totalTransactions || 0,
+        transactionsByChain: prevData?.transactionsByChain || {},
+      };
+      VAA_EMITTER_ADDRESSES.forEach((address) => {
+        const chainId = address.slice(0, address.indexOf(":"));
+        const count = groupByKeys[address] || 0;
+        data.transactionsByChain[chainId] =
+          (data.transactionsByChain[chainId] || 0) + count;
+        data.totalTransactions += count;
       });
-      return data;
+      transactionData.push(data);
+      return transactionData;
     }, [])
-    .slice(timeFrame.count ? -timeFrame.count : 0);
-    */
-  return [];
+    .filter((data) => !startDate || startDate <= data.date);
 };

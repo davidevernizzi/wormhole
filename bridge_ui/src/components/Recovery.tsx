@@ -775,7 +775,8 @@ export default function Recovery() {
                       disabled
                       value={
                         parsedPayload && "fee" in parsedPayload
-                          ? parsedPayload.fee.toString()
+                          ? //@ts-ignore
+                            parsedPayload.fee.toString()
                           : ""
                       }
                       fullWidth

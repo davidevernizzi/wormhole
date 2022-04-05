@@ -7,12 +7,13 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { formatDate, formatTVL } from "./utils";
+import { TimeFrame } from "./TimeFrame";
+import { formatDate, formatTransactionCount, TransactionData } from "./utils";
 
 const useStyles = makeStyles(() => ({
   tooltipContainer: {
     padding: "16px",
-    width: "214px",
+    minWidth: "214px",
     background: "rgba(255, 255, 255, 0.95)",
     borderRadius: "4px",
   },
@@ -35,12 +36,16 @@ const useStyles = makeStyles(() => ({
 const CustomTooltip = ({ active, payload }: any) => {
   const classes = useStyles();
   if (active && payload && payload.length) {
+    const data = payload[0].payload;
     return (
       <div className={classes.tooltipContainer}>
         <Typography className={classes.tooltipTitleText}>All chains</Typography>
         <hr className={classes.tooltipRuler}></hr>
         <Typography className={classes.tooltipValueText}>
-          {`${payload[0].value} transactions`}
+          {`${formatTransactionCount(data.totalTransactions)} transactions`}
+        </Typography>
+        <Typography className={classes.tooltipValueText}>
+          {formatDate(data.date)}
         </Typography>
       </div>
     );
@@ -48,43 +53,41 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-const TransactionsAreaChart = ({ data }: { data: any[] }) => {
+const TransactionsAreaChart = ({
+  transactionData,
+  timeFrame,
+}: {
+  transactionData: TransactionData[];
+  timeFrame: TimeFrame;
+}) => {
   return (
-    <ResponsiveContainer>
-      <AreaChart data={data}>
+    <ResponsiveContainer height={768}>
+      <AreaChart data={transactionData}>
         <XAxis
           dataKey="date"
-          tickFormatter={formatDate}
+          tickFormatter={timeFrame.tickFormatter}
           tick={{ fill: "white" }}
+          interval={timeFrame.interval}
           axisLine={false}
           tickLine={false}
         />
         <YAxis
-          tickFormatter={formatTVL}
+          tickFormatter={formatTransactionCount}
           tick={{ fill: "white" }}
           axisLine={false}
           tickLine={false}
         />
         <Tooltip content={<CustomTooltip />} />
         <defs>
-          <linearGradient
-            id="colorUv"
-            x1="0"
-            y1="0"
-            x2="0"
-            y2="1"
-            // gradientTransform="rotate(0deg)"
-            // rotate="226.4deg" // TODO: not sure this is right?
-          >
-            <stop offset="0%" stopColor="#FF2B57" stopOpacity={1} />
-            <stop offset="102.46%" stopColor="#5EA1EC" stopOpacity={1} />
+          <linearGradient id="gradient" gradientTransform="rotate(100)">
+            <stop offset="0%" stopColor="#FF2B57" />
+            <stop offset="100%" stopColor="#5EA1EC" />
           </linearGradient>
         </defs>
         <Area
-          type="monotone"
           dataKey="totalTransactions"
           stroke="#405BBC"
-          fill="url(#colorUv)"
+          fill="url(#gradient)"
         />
       </AreaChart>
     </ResponsiveContainer>

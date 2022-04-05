@@ -1,6 +1,7 @@
 import { ChainId } from "@certusone/wormhole-sdk";
 import {
   Checkbox,
+  CircularProgress,
   FormControl,
   ListItemText,
   makeStyles,
@@ -10,26 +11,26 @@ import {
   TextField,
   Tooltip,
   Typography,
+  withStyles,
 } from "@material-ui/core";
 import { InfoOutlined } from "@material-ui/icons";
 import { ToggleButton, ToggleButtonGroup } from "@material-ui/lab";
 import { useCallback, useMemo, useState } from "react";
-import useNotionalTransferred, {
-  NotionalTransferred,
-} from "../../hooks/useNotionalTransferred";
+import useNotionalTransferred from "../../hooks/useNotionalTransferred";
 import { COLORS } from "../../muiTheme";
 import { CHAINS_BY_ID } from "../../utils/consts";
 import { TIME_FRAMES } from "./Charts/TimeFrame";
 import {
-  aggregateNotionalTransferred,
-  aggregateTransactions,
+  createCumulativeTransferData,
+  createCumulativeTransactionData,
+  formatTransactionCount,
 } from "./Charts/utils";
 import VolumeAreaChart from "./Charts/VolumeAreaChart";
 import VolumeStackedBarChart from "./Charts/VolumeStackedBarChart";
 import VolumeLineChart from "./Charts/VolumeLineChart";
-import useTransactionCount from "../../hooks/useTransactionCount";
 import TransactionsAreaChart from "./Charts/TransactionsAreaChart ";
 import TransactionsLineChart from "./Charts/TransactionsLineChart";
+import useTransactionTotals from "../../hooks/useTransactionTotals";
 
 const DISPLAY_BY_VALUES = ["Dollar", "Percent", "Transactions"];
 
@@ -37,28 +38,55 @@ const useStyles = makeStyles((theme) => ({
   description: {
     display: "flex",
     alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: "16px",
+    [theme.breakpoints.down("xs")]: {
+      flexDirection: "column",
+    },
   },
   displayBy: {
     display: "flex",
-    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
+    flexWrap: "wrap",
     marginBottom: "16px",
+    [theme.breakpoints.down("xs")]: {
+      justifyContent: "center",
+      columnGap: 8,
+      rowGap: 8,
+    },
   },
   mainPaper: {
+    display: "flex",
+    flexDirection: "column",
     backgroundColor: COLORS.whiteWithTransparency,
     padding: "2rem",
     marginBottom: theme.spacing(8),
-    height: "768px",
   },
   toggleButton: {
     textTransform: "none",
   },
   tooltip: {
-    marginLeft: "8px",
-    marginBottom: "16px",
+    margin: 8,
+  },
+  alignCenter: {
+    margin: "0 auto",
+    display: "block",
   },
 }));
+
+const tooltipStyles = {
+  tooltip: {
+    minWidth: "max-content",
+    borderRadius: "4px",
+    backgroundColor: "#5EA1EC",
+    color: "#0F0C48",
+    fontSize: "14px",
+  },
+};
+
+//@ts-ignore
+const StyledTooltip = withStyles(tooltipStyles)(Tooltip);
 
 const VolumeStats = () => {
   const classes = useStyles();
@@ -70,33 +98,50 @@ const VolumeStats = () => {
 
   const notionalTransferred = useNotionalTransferred();
 
-  const aggregatedNotionalTransferred = useMemo(() => {
+  const transferData = useMemo(() => {
     return notionalTransferred.data
-      ? aggregateNotionalTransferred(
+      ? createCumulativeTransferData(
           notionalTransferred.data,
           TIME_FRAMES[timeFrame]
         )
       : [];
   }, [notionalTransferred, timeFrame]);
 
-  const transactions = useTransactionCount();
+  const transferredAllTime = useMemo(() => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: 0,
+    }).format(notionalTransferred.data?.WithinPeriod["*"]["*"]["*"] || 0);
+  }, [notionalTransferred]);
 
-  const aggregatedTransactions = useMemo(() => {
-    return transactions.data
-      ? aggregateTransactions(transactions.data, TIME_FRAMES[timeFrame])
+  const transactionTotals = useTransactionTotals();
+
+  const transactionData = useMemo(() => {
+    return transactionTotals.data
+      ? createCumulativeTransactionData(
+          transactionTotals.data,
+          TIME_FRAMES[timeFrame]
+        )
       : [];
-  }, [transactions, timeFrame]);
+  }, [transactionTotals, timeFrame]);
+
+  const transactionsAllTime = useMemo(() => {
+    return formatTransactionCount(
+      transactionData[transactionData.length - 1]?.totalTransactions || 0
+    );
+  }, [transactionData]);
 
   const availableChains = useMemo(() => {
     const chainIds = notionalTransferred.data
       ? Object.keys(
           Object.values(notionalTransferred.data.Daily)[0] || {}
-        ).reduce<ChainId[]>((accum, key) => {
+        ).reduce<ChainId[]>((chainIds, key) => {
           const chainId = parseInt(key) as ChainId;
           if (CHAINS_BY_ID[chainId] !== undefined) {
-            accum.push(chainId);
+            chainIds.push(chainId);
           }
-          return accum;
+          return chainIds;
         }, [])
       : [];
     setSelectedChains(chainIds);
@@ -134,23 +179,24 @@ const VolumeStats = () => {
     <>
       <div className={classes.description}>
         <Typography display="inline" variant="h3">
-          Outbound Volume
-          <Tooltip
-            title="Amount of assets bridged through the Wormhole in the outbound direction"
-            arrow
+          {displayBy === "Transactions"
+            ? "Transaction Count"
+            : "Outbound Volume"}
+          <StyledTooltip
+            title={
+              displayBy === "Transactions"
+                ? "Total number of transactions the Token Bridge has processed"
+                : "Amount of assets bridged through Portal in the outbound direction"
+            }
             className={classes.tooltip}
           >
             <InfoOutlined />
-          </Tooltip>
-        </Typography>
-        <Typography
-          display="inline"
-          style={{ marginLeft: "auto", marginRight: "8px" }}
-        >
-          at this time
+          </StyledTooltip>
         </Typography>
         <Typography display="inline" variant="h3">
-          {"$3,299,299,299"}
+          {displayBy === "Transactions"
+            ? transactionsAllTime
+            : transferredAllTime}
         </Typography>
       </div>
       <div className={classes.displayBy}>
@@ -184,6 +230,8 @@ const VolumeStats = () => {
                 : //@ts-ignore
                   CHAINS_BY_ID[selected[0]]?.name
             }
+            MenuProps={{ getContentAnchorEl: null }} // hack to prevent popup menu from moving
+            style={{ minWidth: 128 }}
           >
             <MenuItem value="all">
               <Checkbox
@@ -218,26 +266,43 @@ const VolumeStats = () => {
       </div>
       <Paper className={classes.mainPaper}>
         {displayBy === "Dollar" ? (
-          allChainsSelected ? (
-            <VolumeAreaChart data={aggregatedNotionalTransferred} />
+          transferData ? (
+            allChainsSelected ? (
+              <VolumeAreaChart
+                transferData={transferData}
+                timeFrame={TIME_FRAMES[timeFrame]}
+              />
+            ) : (
+              <VolumeLineChart
+                transferData={transferData}
+                timeFrame={TIME_FRAMES[timeFrame]}
+                chains={selectedChains}
+              />
+            )
           ) : (
-            <VolumeLineChart
-              data={aggregatedNotionalTransferred}
-              selectedChains={selectedChains}
-            />
+            <CircularProgress className={classes.alignCenter} />
           )
         ) : displayBy === "Percent" ? (
           <VolumeStackedBarChart
-            notionalTransferred={aggregatedNotionalTransferred}
+            transferData={transferData}
+            timeFrame={TIME_FRAMES[timeFrame]}
             selectedChains={selectedChains}
           />
-        ) : allChainsSelected ? (
-          <TransactionsAreaChart data={aggregatedTransactions} />
+        ) : transactionData ? (
+          allChainsSelected ? (
+            <TransactionsAreaChart
+              transactionData={transactionData}
+              timeFrame={TIME_FRAMES[timeFrame]}
+            />
+          ) : (
+            <TransactionsLineChart
+              transactionData={transactionData}
+              timeFrame={TIME_FRAMES[timeFrame]}
+              chains={selectedChains}
+            />
+          )
         ) : (
-          <TransactionsLineChart
-            data={aggregatedTransactions}
-            selectedChains={selectedChains}
-          />
+          <CircularProgress className={classes.alignCenter} />
         )}
       </Paper>
     </>

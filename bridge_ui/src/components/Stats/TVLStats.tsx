@@ -22,8 +22,8 @@ import TVLLineChart from "./Charts/TVLLineChart";
 import { ChainInfo, CHAINS_BY_ID } from "../../utils/consts";
 import { ChainId } from "@certusone/wormhole-sdk";
 import { COLORS } from "../../muiTheme";
-import ChainTVLChart from "./Charts/ChainTVLChart";
-import ChainTVLTable from "./Charts/ChainTVLTable";
+import TVLBarChart from "./Charts/TVLBarChart";
+import TVLTable from "./Charts/TVLTable";
 import useTVLNew from "../../hooks/useTVL";
 import { ArrowBack, InfoOutlined } from "@material-ui/icons";
 
@@ -31,55 +31,50 @@ const useStyles = makeStyles((theme) => ({
   description: {
     display: "flex",
     alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: "16px",
+    [theme.breakpoints.down("xs")]: {
+      flexDirection: "column",
+    },
   },
   displayBy: {
     display: "flex",
-    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
+    flexWrap: "wrap",
     marginBottom: "16px",
+    [theme.breakpoints.down("xs")]: {
+      justifyContent: "center",
+      columnGap: 8,
+      rowGap: 8,
+    },
   },
   mainPaper: {
     display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: "column",
     backgroundColor: COLORS.whiteWithTransparency,
     padding: "2rem",
     marginBottom: theme.spacing(8),
-    height: "768px",
   },
   toggleButton: {
     textTransform: "none",
   },
   tooltip: {
-    marginLeft: "8px",
-    marginBottom: "16px",
-    // padding: "8px",
-    // borderRadius: "4px",
+    margin: 8,
   },
-  tvlText: {
-    // styleName: "Heading 36",
-    // fontFamily: "Poppins",
-    // fontSize: "36px",
-    // fontStyle: "normal",
-    // fontWeight: 400,
-    // lineHeight: "42px",
-    // letterSpacing: "0em",
-    // textAlign: "left",
+  alignCenter: {
+    margin: "0 auto",
+    display: "block",
   },
 }));
 
 const tooltipStyles = {
   tooltip: {
     minWidth: "max-content",
-    // textAlign: "center",
     borderRadius: "4px",
     backgroundColor: "#5EA1EC",
     color: "#0F0C48",
     fontSize: "14px",
-    // "& > *": {
-    // margin: ".25rem",
-    // },
   },
 };
 
@@ -104,17 +99,12 @@ const TVLStats = () => {
   const { tvl } = useTVLNew();
 
   // TODO: placeholder number until I figure out why tvl numbers don't match (all time and cumulative today)
-  const allTimeTVL = useMemo(() => {
-    const formatter = new Intl.NumberFormat("en-US", {
+  const tvlAllTime = useMemo(() => {
+    return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
       maximumFractionDigits: 0,
-    });
-    return formatter.format(
-      (selectedChainDetail
-        ? tvl?.AllTime[selectedChainDetail.id]["*"].Notional
-        : tvl?.AllTime["*"]["*"].Notional) || 0
-    );
+    }).format(tvl?.AllTime[selectedChainDetail?.id || "*"]["*"].Notional || 0);
   }, [selectedChainDetail, tvl]);
 
   const availableChains = useMemo(() => {
@@ -168,31 +158,30 @@ const TVLStats = () => {
     (selectedChainDetail ? ` on ${selectedChainDetail?.name}` : "");
   const tooltipText = selectedChainDetail
     ? `Total Value Locked on ${selectedChainDetail?.name}`
-    : "USD equivalent value of all assets locked in the Wormhole protocol";
+    : "USD equivalent value of all assets locked in Portal";
 
   return (
     <>
       <div className={classes.description}>
-        <Typography display="inline" variant="h3" className={classes.tvlText}>
+        <Typography variant="h3">
           {tvlText}
           <StyledTooltip title={tooltipText} className={classes.tooltip}>
             <InfoOutlined />
           </StyledTooltip>
         </Typography>
-        <Typography
-          display="inline"
-          style={{ marginLeft: "auto", marginRight: "8px" }}
-        >
-          at this time
-        </Typography>
-        <Typography display="inline" variant="h3" className={classes.tvlText}>
-          {allTimeTVL}
+        {/* <Typography noWrap style={{ marginLeft: "auto", marginRight: 8 }}> */}
+        {/* at this time */}
+        {/* </Typography> */}
+        <Typography display="inline" variant="h3">
+          {tvlAllTime}
         </Typography>
       </div>
       <div className={classes.displayBy}>
         {!selectedChainDetail ? (
-          <>
-            <Typography style={{ marginRight: "8px" }}>Display by</Typography>
+          <div>
+            <Typography display="inline" style={{ marginRight: "8px" }}>
+              Display by
+            </Typography>
             <ToggleButtonGroup
               value={displayBy}
               exclusive
@@ -208,11 +197,11 @@ const TVLStats = () => {
                 </ToggleButton>
               ))}
             </ToggleButtonGroup>
-          </>
+          </div>
         ) : null}
         {displayBy === "Time" && !selectedChainDetail ? (
-          <>
-            <FormControl style={{ marginLeft: "auto", marginRight: "16px" }}>
+          <div>
+            <FormControl style={{}}>
               <Select
                 multiple
                 variant="outlined"
@@ -226,6 +215,8 @@ const TVLStats = () => {
                     : //@ts-ignore
                       CHAINS_BY_ID[selected[0]]?.name
                 }
+                MenuProps={{ getContentAnchorEl: null }} // hack to prevent popup menu from moving
+                style={{ minWidth: 128 }}
               >
                 <MenuItem value="all">
                   <Checkbox
@@ -250,6 +241,7 @@ const TVLStats = () => {
               variant="outlined"
               value={timeFrame}
               onChange={handleTimeFrameChange}
+              style={{ marginLeft: 8 }}
             >
               {Object.keys(TIME_FRAMES).map(
                 (timeFrame /* TODO: memoize ? */) => (
@@ -259,7 +251,7 @@ const TVLStats = () => {
                 )
               )}
             </TextField>
-          </>
+          </div>
         ) : selectedChainDetail ? (
           <Button
             startIcon={<ArrowBack />}
@@ -287,15 +279,14 @@ const TVLStats = () => {
               />
             )
           ) : (
-            <CircularProgress />
+            <CircularProgress className={classes.alignCenter} />
           )
         ) : selectedChainDetail ? (
-          <ChainTVLTable chainInfo={selectedChainDetail} />
+          <TVLTable chainInfo={selectedChainDetail} />
+        ) : tvl ? (
+          <TVLBarChart tvl={tvl} onChainSelected={handleChainDetailSelected} />
         ) : (
-          <ChainTVLChart
-            tvl={tvl}
-            onChainSelected={handleChainDetailSelected}
-          />
+          <CircularProgress className={classes.alignCenter} />
         )}
       </Paper>
     </>

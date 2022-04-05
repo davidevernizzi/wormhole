@@ -1,4 +1,4 @@
-import { ChainId, CHAIN_ID_SOLANA } from "@certusone/wormhole-sdk";
+import { ChainId } from "@certusone/wormhole-sdk";
 import { Grid, makeStyles, Typography } from "@material-ui/core";
 import { useMemo } from "react";
 import {
@@ -16,8 +16,8 @@ import {
   COLOR_BY_CHAIN_ID,
   getChainShortName,
 } from "../../../utils/consts";
-import { TimeFrame, TIME_FRAMES } from "./TimeFrame";
-import { formatDate, formatTVL, createCumulativeTVLArray } from "./utils";
+import { TimeFrame } from "./TimeFrame";
+import { formatDate, formatTVL, createCumulativeTVLData } from "./utils";
 
 const useStyles = makeStyles(() => ({
   tooltipContainer: {
@@ -33,7 +33,6 @@ const useStyles = makeStyles(() => ({
   },
   tooltipRuler: {
     height: "3px",
-    // backgroundImage: "linear-gradient(90deg, #F44B1B 0%, #EEB430 100%)",
     backgroundColor: "#374B92",
   },
   tooltipValueText: {
@@ -51,7 +50,7 @@ const CustomTooltip = ({ active, payload }: any) => {
   const classes = useStyles();
   if (active && payload && payload.length) {
     if (payload.length === 1) {
-      const chainId = CHAIN_ID_SOLANA;
+      const chainId = +payload[0].dataKey.split(".")[1] as ChainId;
       const chainShortName = getChainShortName(chainId);
       const data = payload.find((data: any) => data.name === chainShortName);
       if (data) {
@@ -134,21 +133,6 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-const tickFormatter = (dateMs: number) => {
-  return new Date(dateMs).toLocaleDateString("en-US", {
-    month: "short",
-    year: "numeric",
-  });
-};
-
-const tickFormatterDaily = (dateMs: number) => {
-  return new Date(dateMs).toLocaleDateString("en-US", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-};
-
 const TVLLineChart = ({
   cumulativeTVL,
   timeFrame,
@@ -159,17 +143,15 @@ const TVLLineChart = ({
   selectedChains: ChainId[];
 }) => {
   const cumulativeTVLArray = useMemo(() => {
-    return createCumulativeTVLArray(cumulativeTVL, timeFrame);
+    return createCumulativeTVLData(cumulativeTVL, timeFrame);
   }, [cumulativeTVL, timeFrame]);
 
   return (
-    <ResponsiveContainer>
+    <ResponsiveContainer height={768}>
       <LineChart data={cumulativeTVLArray}>
         <XAxis
           dataKey="date"
-          tickFormatter={
-            timeFrame.interval === 30 ? tickFormatter : tickFormatterDaily
-          }
+          tickFormatter={timeFrame.tickFormatter}
           tick={{ fill: "white" }}
           interval={timeFrame.interval}
           axisLine={false}
