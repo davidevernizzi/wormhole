@@ -1,5 +1,6 @@
 import {
   ChainId,
+  CHAIN_ID_KLAYTN,
   CHAIN_ID_SOLANA,
   getClaimAddressSolana,
   hexToUint8Array,
@@ -47,10 +48,16 @@ async function evm(
 ) {
   dispatch(setIsRedeeming(true));
   try {
+    // Klaytn requires specifying gasPrice
+    const overrides =
+      chainId === CHAIN_ID_KLAYTN
+        ? { gasPrice: (await signer.getGasPrice()).toString() }
+        : {};
     const receipt = await redeemOnEth(
       getNFTBridgeAddressForChain(chainId),
       signer,
-      signedVAA
+      signedVAA,
+      overrides
     );
     dispatch(
       setRedeemTx({ id: receipt.transactionHash, block: receipt.blockNumber })

@@ -1,5 +1,6 @@
 import {
   ChainId,
+  CHAIN_ID_KLAYTN,
   CHAIN_ID_SOLANA,
   CHAIN_ID_TERRA,
   getEmitterAddressEth,
@@ -90,6 +91,11 @@ async function evm(
       "total",
       transferAmountParsed
     );
+    // Klaytn requires specifying gasPrice
+    const overrides =
+      chainId === CHAIN_ID_KLAYTN
+        ? { gasPrice: (await signer.getGasPrice()).toString() }
+        : {};
     const receipt = isNative
       ? await transferFromEthNative(
           getTokenBridgeAddressForChain(chainId),
@@ -97,7 +103,8 @@ async function evm(
           transferAmountParsed,
           recipientChain,
           recipientAddress,
-          feeParsed
+          feeParsed,
+          overrides
         )
       : await transferFromEth(
           getTokenBridgeAddressForChain(chainId),
@@ -106,7 +113,8 @@ async function evm(
           transferAmountParsed,
           recipientChain,
           recipientAddress,
-          feeParsed
+          feeParsed,
+          overrides
         );
     dispatch(
       setTransferTx({ id: receipt.transactionHash, block: receipt.blockNumber })

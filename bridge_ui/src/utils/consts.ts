@@ -8,6 +8,7 @@ import {
   CHAIN_ID_ETHEREUM_ROPSTEN,
   CHAIN_ID_FANTOM,
   CHAIN_ID_KARURA,
+  CHAIN_ID_KLAYTN,
   CHAIN_ID_OASIS,
   CHAIN_ID_POLYGON,
   CHAIN_ID_SOLANA,
@@ -24,6 +25,7 @@ import bscIcon from "../icons/bsc.svg";
 import ethIcon from "../icons/eth.svg";
 import fantomIcon from "../icons/fantom.svg";
 import karuraIcon from "../icons/karura.svg";
+import klaytnIcon from "../icons/klaytn.svg";
 import oasisIcon from "../icons/oasis-network-rose-logo.svg";
 import polygonIcon from "../icons/polygon.svg";
 import solanaIcon from "../icons/solana.svg";
@@ -128,6 +130,11 @@ export const CHAINS: ChainInfo[] =
           logo: karuraIcon,
         },
         {
+          id: CHAIN_ID_KLAYTN,
+          name: "Klaytn",
+          logo: klaytnIcon,
+        },
+        {
           id: CHAIN_ID_OASIS,
           name: "Oasis",
           logo: oasisIcon,
@@ -183,7 +190,8 @@ export const CHAINS_WITH_NFT_SUPPORT = CHAINS.filter(
     id === CHAIN_ID_AURORA ||
     id === CHAIN_ID_FANTOM ||
     id === CHAIN_ID_KARURA ||
-    id === CHAIN_ID_ACALA
+    id === CHAIN_ID_ACALA ||
+    id === CHAIN_ID_KLAYTN
 );
 export type ChainsById = { [key in ChainId]: ChainInfo };
 export const CHAINS_BY_ID: ChainsById = CHAINS.reduce((obj, chain) => {
@@ -215,6 +223,8 @@ export const getDefaultNativeCurrencySymbol = (chainId: ChainId) =>
     ? "KAR"
     : chainId === CHAIN_ID_ACALA
     ? "ACA"
+    : chainId === CHAIN_ID_KLAYTN
+    ? "KLAY"
     : "";
 export const getExplorerName = (chainId: ChainId) =>
   chainId === CHAIN_ID_ETH || chainId === CHAIN_ID_ETHEREUM_ROPSTEN
@@ -229,6 +239,8 @@ export const getExplorerName = (chainId: ChainId) =>
     ? "Snowtrace"
     : chainId === CHAIN_ID_FANTOM
     ? "FTMScan"
+    : chainId === CHAIN_ID_KLAYTN
+    ? "Klaytnscope"
     : "Explorer";
 export const WORMHOLE_RPC_HOSTS =
   CLUSTER === "mainnet"
@@ -267,6 +279,8 @@ export const KARURA_NETWORK_CHAIN_ID =
   CLUSTER === "mainnet" ? 686 : CLUSTER === "testnet" ? 686 : 1381;
 export const ACALA_NETWORK_CHAIN_ID =
   CLUSTER === "mainnet" ? 787 : CLUSTER === "testnet" ? 787 : 1381;
+export const KLAYTN_NETWORK_CHAIN_ID =
+  CLUSTER === "mainnet" ? 8217 : CLUSTER === "testnet" ? 1001 : 1381;
 export const getEvmChainId = (chainId: ChainId) =>
   chainId === CHAIN_ID_ETH
     ? ETH_NETWORK_CHAIN_ID
@@ -288,6 +302,8 @@ export const getEvmChainId = (chainId: ChainId) =>
     ? KARURA_NETWORK_CHAIN_ID
     : chainId === CHAIN_ID_ACALA
     ? ACALA_NETWORK_CHAIN_ID
+    : chainId === CHAIN_ID_KLAYTN
+    ? KLAYTN_NETWORK_CHAIN_ID
     : undefined;
 export const SOLANA_HOST = process.env.REACT_APP_SOLANA_API_URL
   ? process.env.REACT_APP_SOLANA_API_URL
@@ -516,6 +532,27 @@ export const ACALA_TOKEN_BRIDGE_ADDRESS = getAddress(
     ? "0xebA00cbe08992EdD08ed7793E07ad6063c807004"
     : "0x0290FB167208Af455bB137780163b7B7a9a10C16"
 );
+export const KLAYTN_BRIDGE_ADDRESS = getAddress(
+  CLUSTER === "mainnet"
+    ? "0x0000000000000000000000000000000000000000"
+    : CLUSTER === "testnet"
+    ? "0x1830CC6eE66c84D2F177B94D544967c774E624cA"
+    : "0xC89Ce4735882C9F0f0FE26686c53074E09B0D550"
+);
+export const KLAYTN_NFT_BRIDGE_ADDRESS = getAddress(
+  CLUSTER === "mainnet"
+    ? "0x0000000000000000000000000000000000000000"
+    : CLUSTER === "testnet"
+    ? "0x94c994fC51c13101062958b567e743f1a04432dE"
+    : "0x26b4afb60d6c903165150c6f0aa14f8016be4aec"
+);
+export const KLAYTN_TOKEN_BRIDGE_ADDRESS = getAddress(
+  CLUSTER === "mainnet"
+    ? "0x0000000000000000000000000000000000000000"
+    : CLUSTER === "testnet"
+    ? "0xC7A13BE098720840dEa132D860fDfa030884b09A"
+    : "0x0290FB167208Af455bB137780163b7B7a9a10C16"
+);
 export const SOL_BRIDGE_ADDRESS =
   CLUSTER === "mainnet"
     ? "worm2ZoG2kUd4vFXhvjh93UUH596ayRfgQ2MgjNMTth"
@@ -600,6 +637,8 @@ export const getBridgeAddressForChain = (chainId: ChainId) =>
     ? KARURA_BRIDGE_ADDRESS
     : chainId === CHAIN_ID_ACALA
     ? ACALA_BRIDGE_ADDRESS
+    : chainId === CHAIN_ID_KLAYTN
+    ? KLAYTN_BRIDGE_ADDRESS
     : "";
 export const getNFTBridgeAddressForChain = (chainId: ChainId) =>
   chainId === CHAIN_ID_SOLANA
@@ -624,6 +663,8 @@ export const getNFTBridgeAddressForChain = (chainId: ChainId) =>
     ? KARURA_NFT_BRIDGE_ADDRESS
     : chainId === CHAIN_ID_ACALA
     ? ACALA_NFT_BRIDGE_ADDRESS
+    : chainId === CHAIN_ID_KLAYTN
+    ? KLAYTN_NFT_BRIDGE_ADDRESS
     : "";
 export const getTokenBridgeAddressForChain = (chainId: ChainId) =>
   chainId === CHAIN_ID_SOLANA
@@ -650,6 +691,8 @@ export const getTokenBridgeAddressForChain = (chainId: ChainId) =>
     ? KARURA_TOKEN_BRIDGE_ADDRESS
     : chainId === CHAIN_ID_ACALA
     ? ACALA_TOKEN_BRIDGE_ADDRESS
+    : chainId === CHAIN_ID_KLAYTN
+    ? KLAYTN_TOKEN_BRIDGE_ADDRESS
     : "";
 
 export const COVALENT_API_KEY = process.env.REACT_APP_COVALENT_API_KEY
@@ -667,6 +710,7 @@ export const COVALENT_FANTOM =
   CLUSTER === "devnet" ? 250 : FANTOM_NETWORK_CHAIN_ID;
 export const COVALENT_KARURA = CLUSTER === "devnet" ? null : null;
 export const COVALENT_ACALA = CLUSTER === "devnet" ? null : null;
+export const COVALENT_KLAYTN = CLUSTER === "devnet" ? null : null;
 export const COVALENT_GET_TOKENS_URL = (
   chainId: ChainId,
   walletAddress: string,
@@ -692,6 +736,8 @@ export const COVALENT_GET_TOKENS_URL = (
       ? COVALENT_KARURA
       : chainId === CHAIN_ID_ACALA
       ? COVALENT_ACALA
+      : chainId === CHAIN_ID_KLAYTN
+      ? COVALENT_KLAYTN
       : "";
   // https://www.covalenthq.com/docs/api/#get-/v1/{chain_id}/address/{address}/balances_v2/
   return `https://api.covalenthq.com/v1/${chainNum}/address/${walletAddress}/balances_v2/?key=${COVALENT_API_KEY}${
@@ -766,6 +812,14 @@ export const WFTM_ADDRESS =
     ? "0xf1277d1Ed8AD466beddF92ef448A132661956621"
     : "0xDDb64fE46a91D46ee29420539FC25FD07c5FEa3E";
 export const WFTM_DECIMALS = 18;
+
+export const WKLAY_ADDRESS =
+  CLUSTER === "mainnet"
+    ? "0x0000000000000000000000000000000000000000"
+    : CLUSTER === "testnet"
+    ? "0x762ac6e8183db5a8e912a66fcc1a09f5a7ac96a9"
+    : "0xDDb64fE46a91D46ee29420539FC25FD07c5FEa3E";
+export const WKLAY_DECIMALS = 18;
 
 export const WORMHOLE_V1_ETH_ADDRESS =
   CLUSTER === "mainnet"

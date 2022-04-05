@@ -2,6 +2,7 @@ import {
   ChainId,
   CHAIN_ID_ACALA,
   CHAIN_ID_KARURA,
+  CHAIN_ID_KLAYTN,
   CHAIN_ID_SOLANA,
   CHAIN_ID_TERRA,
   createWrappedOnEth,
@@ -59,11 +60,14 @@ async function evm(
   dispatch(setIsCreating(true));
   try {
     // Karura and Acala need gas params for contract deploys
+    // Klaytn requires specifying gasPrice
     const overrides =
       chainId === CHAIN_ID_KARURA
         ? await getKaruraGasParams(KARURA_HOST)
         : chainId === CHAIN_ID_ACALA
         ? await getKaruraGasParams(ACALA_HOST)
+        : chainId === CHAIN_ID_KLAYTN
+        ? { gasPrice: (await signer.getGasPrice()).toString() }
         : {};
     const receipt = shouldUpdate
       ? await updateWrappedOnEth(
