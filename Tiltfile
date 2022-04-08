@@ -253,7 +253,10 @@ if solana:
         context = "solana",
         dockerfile = "solana/Dockerfile",
         target = "builder",
-        build_args = {"BRIDGE_ADDRESS": "Bridge1p5gheXUvJ6jGWGeCsgPKgnE3YgdGKRVCMY9o"}
+        build_args = {
+            "BRIDGE_ADDRESS": "Bridge1p5gheXUvJ6jGWGeCsgPKgnE3YgdGKRVCMY9o",
+            "CI": ci,
+        }
     )
 
     # solana local devnet

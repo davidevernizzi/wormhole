@@ -57,3 +57,14 @@ ENV RUST_BACKTRACE=1
 
 FROM scratch AS export-stage
 COPY --from=builder /opt/solana/deps /
+
+ARG CI=False
+
+RUN --mount=type=cache,target=bpf-test \
+    echo "${CI}" \
+    if [[ "${CI}" == "True" ]]; then \
+        cargo test-bpf \
+            --manifest-path bridge/program/Cargo.toml \
+            --bpf-out-dir target-test \
+            --features trace,instructions \
+    fi
