@@ -334,7 +334,7 @@ pub fn complete_wrapped_with_payload(
             AccountMeta::new_readonly(bridge_id, false),
             AccountMeta::new_readonly(spl_token::id(), false),
         ],
-        data: (crate::instruction::Instruction::CompleteWrapped, data).try_to_vec()?,
+        data: (crate::instruction::Instruction::CompleteWrappedWithPayload, data).try_to_vec()?,
     })
 }
 
