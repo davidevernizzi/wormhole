@@ -9,7 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@cosmjs/encoding": "^0.26.2",
+    "@cosmjs/encoding": "^0.28.0",
     "@terra-money/terra.js": "^3.0.9",
     "elliptic": "^6.5.4",
     "ts-jest": "^27.1.4",
