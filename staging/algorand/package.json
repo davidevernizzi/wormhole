@@ -26,8 +26,8 @@
     "esm": "^3.2.25",
     "ethers": "^5.5.1",
     "js-sha512": "^0.8.0",
-    "web3-eth-abi": "^1.6.1",
-    "web3-utils": "^1.6.1"
+    "web3-eth-abi": "^4.0.1",
+    "web3-utils": "^4.2.1"
   },
   "devDependencies": {
     "@types/superagent": "^4.1.13",
