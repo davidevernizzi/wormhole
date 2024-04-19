@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "dependencies": {
     "@certusone/wormhole-sdk": "^0.2.0",
-    "@solana/web3.js": "^1.22.0",
+    "@solana/web3.js": "^1.91.3",
     "@terra-money/terra.js": "^1.8.9",
     "bn.js": "^5.2.0",
     "bs58": "^4.0.1",
