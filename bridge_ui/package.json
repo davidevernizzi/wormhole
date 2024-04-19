@@ -16,7 +16,7 @@
     "@solana/wallet-adapter-react": "^0.15.3",
     "@solana/wallet-adapter-react-ui": "^0.9.5",
     "@solana/wallet-adapter-wallets": "^0.15.3",
-    "@solana/web3.js": "^1.35.1",
+    "@solana/web3.js": "^1.91.3",
     "@terra-money/wallet-provider": "^3.8.0",
     "axios": "^0.21.1",
     "bech32": "^1.1.4",
