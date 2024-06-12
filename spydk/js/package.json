@@ -45,7 +45,7 @@
     "typescript": "^4.3.5"
   },
   "dependencies": {
-    "@grpc/grpc-js": "^1.4.4",
+    "@grpc/grpc-js": "^1.8.22",
     "protobufjs": "^6.11.2"
   }
 }
