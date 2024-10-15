@@ -10,7 +10,7 @@
     "clean": "gatsby clean"
   },
   "dependencies": {
-    "@certusone/wormhole-sdk": "0.2.0",
+    "@certusone/wormhole-sdk": "0.9.0",
     "@cosmjs/encoding": "^0.27.0",
     "@emotion/react": "^11.7.1",
     "@emotion/styled": "^11.6.0",
@@ -22,7 +22,7 @@
     "@nivo/bar": "^0.79.1",
     "buffer": "^6.0.3",
     "dotenv": "^10.0.0",
-    "ethers": "^5.4.1",
+    "ethers": "^6.0.0",
     "gatsby": "^4.4.0",
     "gatsby-plugin-google-gtag": "^4.4.0",
     "gatsby-plugin-material-ui": "^4.1.0",
