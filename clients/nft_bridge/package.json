@@ -2,15 +2,15 @@
   "name": "wormhole-client-solana",
   "version": "1.0.0",
   "dependencies": {
-    "@certusone/wormhole-sdk": "^0.2.0",
-    "@solana/web3.js": "^1.22.0",
+    "@certusone/wormhole-sdk": "^0.9.0",
+    "@solana/web3.js": "^1.54.1",
     "bn.js": "^5.2.0",
     "bs58": "^4.0.1",
     "buffer-layout": "^1.2.2",
-    "ethers": "^5.4.1",
+    "ethers": "^6.0.0",
     "js-base64": "^3.6.1",
     "npm": "^7.20.0",
-    "web3": "^1.5.0",
+    "web3": "^4.2.0",
     "yargs": "^17.0.1"
   },
   "scripts": {
